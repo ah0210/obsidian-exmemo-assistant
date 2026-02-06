@@ -424,6 +424,50 @@ export class ExMemoSettingTab extends PluginSettingTab {
 
 		editTimeFormatSetting.setDisabled(!this.plugin.settings.metaEditTimeEnabled);
 
+		// 作者设置部分
+		new Setting(containerEl).setName(t("author"))
+			.setDesc(t("authorDesc"))
+			.setHeading().setClass('setting-item-nested');
+		
+		const authorNameSetting = new Setting(containerEl)
+			.setName(t('authorName'))
+			.setDesc(t('authorNameDesc'))
+			.setClass('setting-item-nested')
+			.addText(text => text
+				.setValue(this.plugin.settings.metaAuthorName)
+				.onChange(async (value) => {
+					this.plugin.settings.metaAuthorName = value;
+					await this.plugin.saveSettings();
+				}));
+
+		const authorLinkSetting = new Setting(containerEl)
+			.setName(t('authorLink'))
+			.setDesc(t('authorLinkDesc'))
+			.setClass('setting-item-nested')
+			.addText(text => text
+				.setValue(this.plugin.settings.metaAuthorLink)
+				.onChange(async (value) => {
+					this.plugin.settings.metaAuthorLink = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName(t("enableAuthor"))
+			.setDesc(t("enableAuthorDesc"))
+			.setClass('setting-item-nested')
+			.addToggle((toggle) => {
+				toggle.setValue(this.plugin.settings.metaAuthorEnabled)
+					.onChange(async (value) => {
+						this.plugin.settings.metaAuthorEnabled = value;
+						await this.plugin.saveSettings();
+						authorNameSetting.setDisabled(!value);
+						authorLinkSetting.setDisabled(!value);
+					});
+			});
+
+		authorNameSetting.setDisabled(!this.plugin.settings.metaAuthorEnabled);
+		authorLinkSetting.setDisabled(!this.plugin.settings.metaAuthorEnabled);
+
 		// 添加自定义元数据设置
 		new Setting(containerEl)
 			.setName(t('customMetadata'))

@@ -7,6 +7,9 @@ export interface ExMemoSettings {
 	llmPrompts: Record<string, { count: number, lastAccess: number }>;
 	llmDialogEdit: boolean
 	tags: string[];
+	metaAuthorEnabled: boolean;
+	metaAuthorName: string;
+	metaAuthorLink: string;
 	metaIsTruncate: boolean;
 	metaMaxTokens: number;
 	metaTruncateMethod: string;
@@ -37,6 +40,9 @@ export const DEFAULT_SETTINGS: ExMemoSettings = {
 	llmPrompts: {},
 	llmDialogEdit: false,
 	tags: [],
+	metaAuthorEnabled: false,
+	metaAuthorName: '',
+	metaAuthorLink: '',
 	metaIsTruncate: true,
 	metaMaxTokens: 1000,
 	metaTruncateMethod: 'head_only',

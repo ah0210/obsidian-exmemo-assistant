@@ -60,6 +60,19 @@ export async function adjustMdMeta(app: App, settings: ExMemoSettings) {
         }
     }
 
+    // 添加作者信息（author.name / author.link）
+    if (settings.metaAuthorEnabled) {
+        const authorName = (settings.metaAuthorName ?? '').trim();
+        const authorLink = (settings.metaAuthorLink ?? '').trim();
+        if (authorName || authorLink) {
+            const author: { name?: string; link?: string } = {};
+            if (authorName) author.name = authorName;
+            if (authorLink) author.link = authorLink;
+            updateFrontMatter(file, app, 'author', author, 'update');
+            hasChanges = true;
+        }
+    }
+
     // 添加自定义元数据
     if (settings.customMetadata && settings.customMetadata.length > 0) {
         for (const meta of settings.customMetadata) {

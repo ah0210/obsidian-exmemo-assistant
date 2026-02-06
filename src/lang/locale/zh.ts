@@ -81,6 +81,16 @@ export default {
     "editTimeFormat": "时间格式",
     "editTimeFormatDesc": "编辑时间的格式，使用 moment.js 格式",
 
+    // 作者设置
+    "author": "作者",
+    "authorDesc": "写入前置元数据：author.name / author.link",
+    "enableAuthor": "启用作者信息",
+    "enableAuthorDesc": "启用后在生成元数据时写入 author 字段",
+    "authorName": "name",
+    "authorNameDesc": "author.name",
+    "authorLink": "link",
+    "authorLinkDesc": "author.link",
+
     // 自定义字段名相关
     "customFieldNames": "自定义字段名",
     "customFieldNamesDesc": "自定义生成的元数据字段名称",

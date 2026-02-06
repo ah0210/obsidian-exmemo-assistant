@@ -81,6 +81,16 @@ export default {
   "editTimeFormat": "Edit time format",
   "editTimeFormatDesc": "Set the format of the edit time",
 
+  // Author settings
+  "author": "Author",
+  "authorDesc": "Write frontmatter: author.name / author.link",
+  "enableAuthor": "Enable author",
+  "enableAuthorDesc": "When enabled, write the author field when generating meta data",
+  "authorName": "name",
+  "authorNameDesc": "author.name",
+  "authorLink": "link",
+  "authorLinkDesc": "author.link",
+
   // Custom Field Names
   "customFieldNames": "Custom field names",
   "customFieldNamesDesc": "Custom field names for metadata",
