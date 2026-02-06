@@ -22,6 +22,10 @@ export default {
   "apiKey": "API key",
   "baseUrl": "Base URL",
   "modelName": "Model name",
+  "modelNameDesc": "You can add multiple models. The first one is used by default (move up to reorder).",
+  "addModel": "Add model",
+  "defaultModel": "Default",
+  "candidateModel": "Candidate",
 
   // Meta Update Settings
   "metaUpdateSetting": "Update meta",

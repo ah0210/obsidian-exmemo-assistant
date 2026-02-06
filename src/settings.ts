@@ -3,7 +3,7 @@ import { t } from "./lang/helpers";
 export interface ExMemoSettings {
 	llmToken: string;
 	llmBaseUrl: string;
-	llmModelName: string;
+	llmModelNames: string[];
 	llmPrompts: Record<string, { count: number, lastAccess: number }>;
 	llmDialogEdit: boolean
 	tags: string[];
@@ -33,7 +33,7 @@ export interface ExMemoSettings {
 export const DEFAULT_SETTINGS: ExMemoSettings = {
 	llmToken: 'sk-',
 	llmBaseUrl: 'https://api.openai.com/v1',
-	llmModelName: 'gpt-4o',
+	llmModelNames: ['gpt-4o'],
 	llmPrompts: {},
 	llmDialogEdit: false,
 	tags: [],

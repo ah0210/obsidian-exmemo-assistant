@@ -8,6 +8,7 @@ export async function callLLM(req: string, settings: ExMemoSettings): Promise<st
     let info = new Notice(t("llmLoading"), 0);
     //console.log('callLLM:', req.length, 'chars', req);
     //console.warn('callLLM:', settings.llmBaseUrl, settings.llmToken);
+    const model = (settings.llmModelNames?.[0] ?? '').trim() || 'gpt-4o';
     const openai = new OpenAI({
         apiKey: settings.llmToken,
         baseURL: settings.llmBaseUrl,
@@ -15,7 +16,7 @@ export async function callLLM(req: string, settings: ExMemoSettings): Promise<st
     });
     try {
         const completion = await openai.chat.completions.create({
-            model: settings.llmModelName,
+            model,
             messages: [
                 { "role": "user", "content": req }
             ]

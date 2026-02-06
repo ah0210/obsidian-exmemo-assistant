@@ -38,13 +38,64 @@ export class ExMemoSettingTab extends PluginSettingTab {
 				}));
 		new Setting(containerEl)
 			.setName(t("modelName"))
-			.addText(text => text
-				.setPlaceholder('gpt-4o')
-				.setValue(this.plugin.settings.llmModelName)
-				.onChange(async (value) => {
-					this.plugin.settings.llmModelName = value;
-					await this.plugin.saveSettings();
-				}));
+			.setDesc(t("modelNameDesc"))
+			.addButton((button) => {
+				button.setButtonText(t("addModel"))
+					.onClick(async () => {
+						this.plugin.settings.llmModelNames.push('');
+						await this.plugin.saveSettings();
+						this.display();
+					});
+			});
+
+		this.plugin.settings.llmModelNames.forEach((modelName: string, index: number) => {
+			const setting = new Setting(containerEl)
+				.setName(index === 0 ? t("defaultModel") : t("candidateModel"))
+				.setClass('setting-item-nested');
+
+			setting
+				.addText((text) => {
+					text.setPlaceholder('gpt-4o')
+						.setValue(modelName)
+						.onChange(async (value) => {
+							this.plugin.settings.llmModelNames[index] = value;
+							await this.plugin.saveSettings();
+						});
+				})
+				.addButton((button) => {
+					button.setIcon('arrow-up')
+						.setDisabled(index === 0)
+						.onClick(async () => {
+							const list = this.plugin.settings.llmModelNames;
+							[list[index - 1], list[index]] = [list[index], list[index - 1]];
+							await this.plugin.saveSettings();
+							this.display();
+						});
+				})
+				.addButton((button) => {
+					button.setIcon('arrow-down')
+						.setDisabled(index >= this.plugin.settings.llmModelNames.length - 1)
+						.onClick(async () => {
+							const list = this.plugin.settings.llmModelNames;
+							[list[index], list[index + 1]] = [list[index + 1], list[index]];
+							await this.plugin.saveSettings();
+							this.display();
+						});
+				})
+				.addButton((button) => {
+					button.setIcon('trash')
+						.onClick(async () => {
+							const list = this.plugin.settings.llmModelNames;
+							if (list.length <= 1) {
+								list[0] = '';
+							} else {
+								list.splice(index, 1);
+							}
+							await this.plugin.saveSettings();
+							this.display();
+						});
+				});
+		});
 
 		// 更新元数据设置部分
 		new Setting(containerEl).setName(t("metaUpdateSetting"))

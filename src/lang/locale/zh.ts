@@ -22,6 +22,10 @@ export default {
     "apiKey": "API 密钥",
     "baseUrl": "基础 URL",
     "modelName": "模型名称",
+    "modelNameDesc": "可填写多个，默认使用第一项（可用上移调整）",
+    "addModel": "添加模型",
+    "defaultModel": "默认",
+    "candidateModel": "候选",
 
     // 元数据更新设置
     "metaUpdateSetting": "更新元数据",

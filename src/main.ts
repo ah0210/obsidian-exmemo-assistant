@@ -20,7 +20,29 @@ export default class ExMemoAsstPlugin extends Plugin {
     onunload() {
     }
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		const data = (await this.loadData()) as any;
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
+
+		let migrated = false;
+
+		if (!Array.isArray(this.settings.llmModelNames)) {
+			const legacyModelName = typeof data?.llmModelName === 'string' ? data.llmModelName : '';
+			this.settings.llmModelNames = legacyModelName ? [legacyModelName] : [...DEFAULT_SETTINGS.llmModelNames];
+			migrated = true;
+		}
+
+		this.settings.llmModelNames = this.settings.llmModelNames
+			.map((v) => (typeof v === 'string' ? v.trim() : ''))
+			.filter((v) => v.length > 0);
+
+		if (this.settings.llmModelNames.length === 0) {
+			this.settings.llmModelNames = [...DEFAULT_SETTINGS.llmModelNames];
+			migrated = true;
+		}
+
+		if (migrated) {
+			await this.saveSettings();
+		}
 	}
 	async saveSettings() {
 		await this.saveData(this.settings);
