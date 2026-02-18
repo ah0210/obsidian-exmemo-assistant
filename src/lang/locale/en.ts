@@ -102,6 +102,8 @@ export default {
   "defaultCoverPrompt": "Create a concise cover prompt including subject, style, lighting, and tone. Avoid text and watermarks.",
   "coverImageModel": "Cover image model",
   "coverImageModelDesc": "Model name that supports image generation",
+  "coverImageBaseUrl": "Cover image base URL",
+  "coverImageBaseUrlDesc": "Service URL for cover image generation (Stable Diffusion WebUI)",
   "coverImageSize": "Cover image size",
   "coverImageSizeDesc": "Image size, e.g. 1024x1024",
   "coverImageModelMissing": "Cover image model not set",

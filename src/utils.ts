@@ -42,10 +42,53 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
     return bytes.buffer;
 }
 
+function parseImageSize(value: string): { width?: number; height?: number } {
+    const match = value.trim().match(/^(\d+)\s*x\s*(\d+)$/i);
+    if (!match) {
+        return {};
+    }
+    const width = Number(match[1]);
+    const height = Number(match[2]);
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+        return {};
+    }
+    return { width, height };
+}
+
 export async function generateImage(prompt: string, settings: ExMemoSettings): Promise<{ buffer: ArrayBuffer; extension: string } | null> {
     const model = (settings.metaCoverImageModel ?? '').trim();
     if (!model) {
         return null;
+    }
+    const normalizedModel = model.toLowerCase();
+    if (normalizedModel === 'sd-webui' || normalizedModel === 'stable-diffusion' || normalizedModel === 'sd') {
+        const baseUrl = (settings.metaCoverImageBaseUrl ?? '').trim() || 'http://127.0.0.1:7860';
+        const size = (settings.metaCoverImageSize ?? '').trim();
+        const sizeInfo = size ? parseImageSize(size) : {};
+        const width = sizeInfo.width;
+        const height = sizeInfo.height;
+        const payload: Record<string, unknown> = { prompt };
+        if (width && height) {
+            payload.width = width;
+            payload.height = height;
+        }
+        const response = await fetch(`${baseUrl.replace(/\/$/, '')}/sdapi/v1/txt2img`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!response.ok) {
+            throw new Error(`Stable Diffusion error: ${response.status} ${response.statusText}`);
+        }
+        const data = await response.json();
+        const imageBase64 = data?.images?.[0];
+        if (!imageBase64) {
+            return null;
+        }
+        const cleaned = typeof imageBase64 === 'string' && imageBase64.includes(',')
+            ? imageBase64.split(',')[1]
+            : imageBase64;
+        return { buffer: base64ToArrayBuffer(cleaned), extension: 'png' };
     }
     const size = (settings.metaCoverImageSize ?? '').trim() || '1024x1024';
     const allowedSizes = ['auto', '1024x1024', '1536x1024', '1024x1536', '256x256', '512x512', '1792x1024', '1024x1792'] as const;

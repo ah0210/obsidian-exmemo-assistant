@@ -102,6 +102,8 @@ export default {
     "defaultCoverPrompt": "生成简洁的封面图提示词，包含主体、风格、光线、色调，避免文字与水印。",
     "coverImageModel": "封面图模型",
     "coverImageModelDesc": "支持图片生成的模型名称",
+    "coverImageBaseUrl": "封面图基础 URL",
+    "coverImageBaseUrlDesc": "用于生成封面图的服务地址（Stable Diffusion WebUI）",
     "coverImageSize": "封面图尺寸",
     "coverImageSizeDesc": "图片尺寸，例如 1024x1024",
     "coverImageModelMissing": "未设置封面图模型，无法生成图片",

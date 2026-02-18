@@ -509,6 +509,18 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
+		const coverImageBaseUrlSetting = new Setting(containerEl)
+			.setName(t('coverImageBaseUrl'))
+			.setDesc(t('coverImageBaseUrlDesc'))
+			.setClass('setting-item-nested')
+			.addText(text => text
+				.setValue(this.plugin.settings.metaCoverImageBaseUrl)
+				.setPlaceholder('http://127.0.0.1:7860')
+				.onChange(async (value) => {
+					this.plugin.settings.metaCoverImageBaseUrl = value || 'http://127.0.0.1:7860';
+					await this.plugin.saveSettings();
+				}));
+
 		const coverImageSizeSetting = new Setting(containerEl)
 			.setName(t('coverImageSize'))
 			.setDesc(t('coverImageSizeDesc'))
@@ -533,6 +545,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 						coverFieldNameSetting.setDisabled(!value);
 						coverPromptSetting.setDisabled(!value);
 						coverImageModelSetting.setDisabled(!value);
+					coverImageBaseUrlSetting.setDisabled(!value);
 						coverImageSizeSetting.setDisabled(!value);
 					});
 			});
@@ -540,6 +553,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 		coverFieldNameSetting.setDisabled(!this.plugin.settings.metaCoverEnabled);
 		coverPromptSetting.setDisabled(!this.plugin.settings.metaCoverEnabled);
 		coverImageModelSetting.setDisabled(!this.plugin.settings.metaCoverEnabled);
+		coverImageBaseUrlSetting.setDisabled(!this.plugin.settings.metaCoverEnabled);
 		coverImageSizeSetting.setDisabled(!this.plugin.settings.metaCoverEnabled);
 
 		// 添加自定义元数据设置

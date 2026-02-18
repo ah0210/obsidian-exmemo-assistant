@@ -14,6 +14,7 @@ export interface ExMemoSettings {
 	metaCoverFieldName: string;
 	metaCoverPrompt: string;
 	metaCoverImageModel: string;
+	metaCoverImageBaseUrl: string;
 	metaCoverImageSize: string;
 	metaIsTruncate: boolean;
 	metaMaxTokens: number;
@@ -52,6 +53,7 @@ export const DEFAULT_SETTINGS: ExMemoSettings = {
 	metaCoverFieldName: 'cover',
 	metaCoverPrompt: t('defaultCoverPrompt'),
 	metaCoverImageModel: '',
+	metaCoverImageBaseUrl: 'http://127.0.0.1:7860',
 	metaCoverImageSize: '1024x1024',
 	metaIsTruncate: true,
 	metaMaxTokens: 1000,
