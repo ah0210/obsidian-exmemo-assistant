@@ -91,6 +91,22 @@ export default {
   "authorLink": "link",
   "authorLinkDesc": "author.link",
 
+  "cover": "Cover image",
+  "coverDesc": "Generate and write cover image from prompt",
+  "enableCover": "Enable cover image",
+  "enableCoverDesc": "When enabled, generate a cover image and write the field",
+  "coverFieldName": "Cover field name",
+  "coverFieldNameDesc": "Field name used for the cover image (default: cover)",
+  "coverPrompt": "Cover prompt",
+  "coverPromptDesc": "Instructions for generating the cover prompt",
+  "defaultCoverPrompt": "Create a concise cover prompt including subject, style, lighting, and tone. Avoid text and watermarks.",
+  "coverImageModel": "Cover image model",
+  "coverImageModelDesc": "Model name that supports image generation",
+  "coverImageSize": "Cover image size",
+  "coverImageSizeDesc": "Image size, e.g. 1024x1024",
+  "coverImageModelMissing": "Cover image model not set",
+  "coverImageFailed": "Cover image generation failed",
+
   // Custom Field Names
   "customFieldNames": "Custom field names",
   "customFieldNamesDesc": "Custom field names for metadata",

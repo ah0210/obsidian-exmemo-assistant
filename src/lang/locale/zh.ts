@@ -91,6 +91,22 @@ export default {
     "authorLink": "link",
     "authorLinkDesc": "author.link",
 
+    "cover": "封面图",
+    "coverDesc": "根据提示生成并写入封面图",
+    "enableCover": "启用封面图生成",
+    "enableCoverDesc": "启用后会自动生成封面图并写入字段",
+    "coverFieldName": "封面图字段名",
+    "coverFieldNameDesc": "写入封面图使用的字段名 (默认: cover)",
+    "coverPrompt": "封面图提示词",
+    "coverPromptDesc": "用于生成封面图提示词的说明",
+    "defaultCoverPrompt": "生成简洁的封面图提示词，包含主体、风格、光线、色调，避免文字与水印。",
+    "coverImageModel": "封面图模型",
+    "coverImageModelDesc": "支持图片生成的模型名称",
+    "coverImageSize": "封面图尺寸",
+    "coverImageSizeDesc": "图片尺寸，例如 1024x1024",
+    "coverImageModelMissing": "未设置封面图模型，无法生成图片",
+    "coverImageFailed": "封面图生成失败",
+
     // 自定义字段名相关
     "customFieldNames": "自定义字段名",
     "customFieldNamesDesc": "自定义生成的元数据字段名称",

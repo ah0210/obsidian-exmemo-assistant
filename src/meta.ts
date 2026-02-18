@@ -2,6 +2,7 @@ import { App, Notice, TFile } from 'obsidian';
 import { ExMemoSettings } from "./settings";
 import { getContent } from './utils';
 import { callLLM } from "./utils";
+import { generateImage } from "./utils";
 import { t } from './lang/helpers';
 import { updateFrontMatter } from './utils';
 
@@ -73,6 +74,11 @@ export async function adjustMdMeta(app: App, settings: ExMemoSettings) {
         }
     }
 
+    const coverUpdated = await addCoverImage(file, app, settings, frontMatter, force);
+    if (coverUpdated) {
+        hasChanges = true;
+    }
+
     // 添加自定义元数据
     if (settings.customMetadata && settings.customMetadata.length > 0) {
         for (const meta of settings.customMetadata) {
@@ -90,6 +96,71 @@ export async function adjustMdMeta(app: App, settings: ExMemoSettings) {
     if (hasChanges) {
         new Notice(t('metaUpdated'));
     }
+}
+
+async function addCoverImage(file: TFile, app: App, settings: ExMemoSettings, frontMatter: any, force: boolean): Promise<boolean> {
+    if (!settings.metaCoverEnabled) {
+        return false;
+    }
+    if (settings.metaUpdateMethod === 'no-llm') {
+        return false;
+    }
+    const fieldName = (settings.metaCoverFieldName ?? '').trim() || 'cover';
+    const currentValue = frontMatter[fieldName];
+    const isEmpty = !currentValue || (typeof currentValue === 'string' && currentValue.trim() === '');
+    if (!force && !isEmpty) {
+        return false;
+    }
+
+    let content_str = '';
+    if (settings.metaIsTruncate) {
+        content_str = await getContent(app, null, settings.metaMaxTokens, settings.metaTruncateMethod);
+    } else {
+        content_str = await getContent(app, null, -1, '');
+    }
+    if (!content_str) {
+        return false;
+    }
+
+    const req = `Generate a cover image prompt for the following article.
+Requirements:
+${settings.metaCoverPrompt}
+Return only the prompt text.
+
+Article content:
+
+${content_str}`;
+
+    const prompt = (await callLLM(req, settings))?.trim();
+    if (!prompt) {
+        return false;
+    }
+
+    let image;
+    try {
+        image = await generateImage(prompt, settings);
+    } catch (error) {
+        new Notice(t('coverImageFailed') + "\n" + error as string);
+        return false;
+    }
+    if (!image) {
+        new Notice(t('coverImageModelMissing'));
+        return false;
+    }
+
+    const folder = file.parent?.path ?? '';
+    const baseName = `${file.basename}-cover`;
+    const extension = image.extension || 'png';
+    let filePath = folder ? `${folder}/${baseName}.${extension}` : `${baseName}.${extension}`;
+    let index = 1;
+    while (app.vault.getAbstractFileByPath(filePath)) {
+        filePath = folder ? `${folder}/${baseName}-${index}.${extension}` : `${baseName}-${index}.${extension}`;
+        index += 1;
+    }
+
+    await app.vault.createBinary(filePath, image.buffer);
+    updateFrontMatter(file, app, fieldName, filePath, 'update');
+    return true;
 }
 
 async function addMetaByLLM(file: TFile, app: App, settings: ExMemoSettings, frontMatter: any, force: boolean = false) {

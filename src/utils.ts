@@ -32,6 +32,51 @@ export async function callLLM(req: string, settings: ExMemoSettings): Promise<st
     return ret
 }
 
+function base64ToArrayBuffer(base64: string): ArrayBuffer {
+    const binary = atob(base64);
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes.buffer;
+}
+
+export async function generateImage(prompt: string, settings: ExMemoSettings): Promise<{ buffer: ArrayBuffer; extension: string } | null> {
+    const model = (settings.metaCoverImageModel ?? '').trim();
+    if (!model) {
+        return null;
+    }
+    const size = (settings.metaCoverImageSize ?? '').trim() || '1024x1024';
+    const allowedSizes = ['auto', '1024x1024', '1536x1024', '1024x1536', '256x256', '512x512', '1792x1024', '1024x1792'] as const;
+    const sizeValue = allowedSizes.includes(size as typeof allowedSizes[number]) ? (size as typeof allowedSizes[number]) : '1024x1024';
+    const openai = new OpenAI({
+        apiKey: settings.llmToken,
+        baseURL: settings.llmBaseUrl,
+        dangerouslyAllowBrowser: true
+    });
+    const response = await openai.images.generate({
+        model,
+        prompt,
+        size: sizeValue,
+        response_format: 'b64_json'
+    });
+    const item = response.data?.[0];
+    if (item?.b64_json) {
+        return { buffer: base64ToArrayBuffer(item.b64_json), extension: 'png' };
+    }
+    if (item?.url) {
+        const res = await fetch(item.url);
+        const buffer = await res.arrayBuffer();
+        const contentType = res.headers.get('content-type') ?? '';
+        let extension = 'png';
+        if (contentType.includes('jpeg')) extension = 'jpg';
+        if (contentType.includes('webp')) extension = 'webp';
+        return { buffer, extension };
+    }
+    return null;
+}
+
 class ConfirmModal extends Modal {
     private resolvePromise: (value: boolean) => void;
     private message: string;

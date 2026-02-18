@@ -10,6 +10,11 @@ export interface ExMemoSettings {
 	metaAuthorEnabled: boolean;
 	metaAuthorName: string;
 	metaAuthorLink: string;
+	metaCoverEnabled: boolean;
+	metaCoverFieldName: string;
+	metaCoverPrompt: string;
+	metaCoverImageModel: string;
+	metaCoverImageSize: string;
 	metaIsTruncate: boolean;
 	metaMaxTokens: number;
 	metaTruncateMethod: string;
@@ -43,6 +48,11 @@ export const DEFAULT_SETTINGS: ExMemoSettings = {
 	metaAuthorEnabled: false,
 	metaAuthorName: '',
 	metaAuthorLink: '',
+	metaCoverEnabled: false,
+	metaCoverFieldName: 'cover',
+	metaCoverPrompt: t('defaultCoverPrompt'),
+	metaCoverImageModel: '',
+	metaCoverImageSize: '1024x1024',
 	metaIsTruncate: true,
 	metaMaxTokens: 1000,
 	metaTruncateMethod: 'head_only',
