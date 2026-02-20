@@ -10,6 +10,7 @@ export interface ExMemoSettings {
 	metaAuthorEnabled: boolean;
 	metaAuthorName: string;
 	metaAuthorLink: string;
+	metaAuthorAvatar: string;
 	metaCoverEnabled: boolean;
 	metaCoverFieldName: string;
 	metaCoverPrompt: string;
@@ -49,6 +50,7 @@ export const DEFAULT_SETTINGS: ExMemoSettings = {
 	metaAuthorEnabled: false,
 	metaAuthorName: '',
 	metaAuthorLink: '',
+	metaAuthorAvatar: '',
 	metaCoverEnabled: false,
 	metaCoverFieldName: 'cover',
 	metaCoverPrompt: t('defaultCoverPrompt'),

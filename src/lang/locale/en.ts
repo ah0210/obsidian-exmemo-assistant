@@ -90,6 +90,8 @@ export default {
   "authorNameDesc": "author.name",
   "authorLink": "link",
   "authorLinkDesc": "author.link",
+  "authorAvatar": "avatar",
+  "authorAvatarDesc": "author.avatar",
 
   "cover": "Cover image",
   "coverDesc": "Generate and write cover image from prompt",

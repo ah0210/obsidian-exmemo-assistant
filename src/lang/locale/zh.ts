@@ -90,6 +90,8 @@ export default {
     "authorNameDesc": "author.name",
     "authorLink": "link",
     "authorLinkDesc": "author.link",
+    "authorAvatar": "avatar",
+    "authorAvatarDesc": "author.avatar",
 
     "cover": "封面图",
     "coverDesc": "根据提示生成并写入封面图",

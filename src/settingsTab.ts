@@ -451,6 +451,17 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
+		const authorAvatarSetting = new Setting(containerEl)
+			.setName(t('authorAvatar'))
+			.setDesc(t('authorAvatarDesc'))
+			.setClass('setting-item-nested')
+			.addText(text => text
+				.setValue(this.plugin.settings.metaAuthorAvatar)
+				.onChange(async (value) => {
+					this.plugin.settings.metaAuthorAvatar = value;
+					await this.plugin.saveSettings();
+				}));
+
 		new Setting(containerEl)
 			.setName(t("enableAuthor"))
 			.setDesc(t("enableAuthorDesc"))
@@ -462,11 +473,13 @@ export class ExMemoSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 						authorNameSetting.setDisabled(!value);
 						authorLinkSetting.setDisabled(!value);
+						authorAvatarSetting.setDisabled(!value);
 					});
 			});
 
 		authorNameSetting.setDisabled(!this.plugin.settings.metaAuthorEnabled);
 		authorLinkSetting.setDisabled(!this.plugin.settings.metaAuthorEnabled);
+		authorAvatarSetting.setDisabled(!this.plugin.settings.metaAuthorEnabled);
 
 		new Setting(containerEl).setName(t("cover"))
 			.setDesc(t("coverDesc"))

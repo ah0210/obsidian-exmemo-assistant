@@ -2,7 +2,6 @@ import { App, Notice, TFile } from 'obsidian';
 import { ExMemoSettings } from "./settings";
 import { getContent } from './utils';
 import { callLLM } from "./utils";
-import { generateImage } from "./utils";
 import { t } from './lang/helpers';
 import { updateFrontMatter } from './utils';
 
@@ -61,14 +60,16 @@ export async function adjustMdMeta(app: App, settings: ExMemoSettings) {
         }
     }
 
-    // 添加作者信息（author.name / author.link）
+    // 添加作者信息（author.name / author.link / author.avatar）
     if (settings.metaAuthorEnabled) {
         const authorName = (settings.metaAuthorName ?? '').trim();
         const authorLink = (settings.metaAuthorLink ?? '').trim();
-        if (authorName || authorLink) {
-            const author: { name?: string; link?: string } = {};
+        const authorAvatar = (settings.metaAuthorAvatar ?? '').trim();
+        if (authorName || authorLink || authorAvatar) {
+            const author: { name?: string; link?: string; avatar?: string } = {};
             if (authorName) author.name = authorName;
             if (authorLink) author.link = authorLink;
+            if (authorAvatar) author.avatar = authorAvatar;
             updateFrontMatter(file, app, 'author', author, 'update');
             hasChanges = true;
         }
@@ -98,68 +99,71 @@ export async function adjustMdMeta(app: App, settings: ExMemoSettings) {
     }
 }
 
+function extractImageLinks(content: string): string[] {
+    const results: string[] = [];
+    const addLink = (value: string) => {
+        const link = value.trim();
+        if (!link) return;
+        if (!results.includes(link)) {
+            results.push(link);
+        }
+    };
+
+    const markdownImageRegex = /!\[[^\]]*]\(([^)\s]+)(?:\s+["'][^"']*["'])?\)/g;
+    let match = markdownImageRegex.exec(content);
+    while (match) {
+        addLink(match[1]);
+        match = markdownImageRegex.exec(content);
+    }
+
+    const wikiImageRegex = /!\[\[([^\]]+)]]/g;
+    match = wikiImageRegex.exec(content);
+    while (match) {
+        const raw = match[1];
+        const cleaned = raw.split('|')[0].trim();
+        addLink(cleaned);
+        match = wikiImageRegex.exec(content);
+    }
+
+    const htmlImageRegex = /<img\s+[^>]*src=["']([^"']+)["'][^>]*>/gi;
+    match = htmlImageRegex.exec(content);
+    while (match) {
+        addLink(match[1]);
+        match = htmlImageRegex.exec(content);
+    }
+
+    const urlImageRegex = /https?:\/\/[^\s)>"']+\.(?:png|jpe?g|gif|webp|svg)/gi;
+    match = urlImageRegex.exec(content);
+    while (match) {
+        addLink(match[0]);
+        match = urlImageRegex.exec(content);
+    }
+
+    return results;
+}
+
 async function addCoverImage(file: TFile, app: App, settings: ExMemoSettings, frontMatter: any, force: boolean): Promise<boolean> {
     if (!settings.metaCoverEnabled) {
         return false;
     }
-    if (settings.metaUpdateMethod === 'no-llm') {
-        return false;
-    }
-    const fieldName = (settings.metaCoverFieldName ?? '').trim() || 'cover';
+    const fieldName = 'featuredImage';
     const currentValue = frontMatter[fieldName];
     const isEmpty = !currentValue || (typeof currentValue === 'string' && currentValue.trim() === '');
     if (!force && !isEmpty) {
         return false;
     }
 
-    let content_str = '';
-    if (settings.metaIsTruncate) {
-        content_str = await getContent(app, null, settings.metaMaxTokens, settings.metaTruncateMethod);
-    } else {
-        content_str = await getContent(app, null, -1, '');
-    }
-    if (!content_str) {
+    const contentStr = await getContent(app, null, -1, '');
+    if (!contentStr) {
         return false;
     }
 
-    const req = `Generate a cover image prompt for the following article.
-Requirements:
-${settings.metaCoverPrompt}
-Return only the prompt text.
-
-Article content:
-
-${content_str}`;
-
-    const prompt = (await callLLM(req, settings))?.trim();
-    if (!prompt) {
+    const images = extractImageLinks(contentStr);
+    if (images.length === 0) {
         return false;
     }
 
-    let image;
-    try {
-        image = await generateImage(prompt, settings);
-    } catch (error) {
-        new Notice(t('coverImageFailed') + "\n" + error as string);
-        return false;
-    }
-    if (!image) {
-        new Notice(t('coverImageModelMissing'));
-        return false;
-    }
-
-    const folder = file.parent?.path ?? '';
-    const baseName = `${file.basename}-cover`;
-    const extension = image.extension || 'png';
-    let filePath = folder ? `${folder}/${baseName}.${extension}` : `${baseName}.${extension}`;
-    let index = 1;
-    while (app.vault.getAbstractFileByPath(filePath)) {
-        filePath = folder ? `${folder}/${baseName}-${index}.${extension}` : `${baseName}-${index}.${extension}`;
-        index += 1;
-    }
-
-    await app.vault.createBinary(filePath, image.buffer);
-    updateFrontMatter(file, app, fieldName, filePath, 'update');
+    updateFrontMatter(file, app, fieldName, images[0], 'update');
     return true;
 }
 
@@ -180,7 +184,7 @@ async function addMetaByLLM(file: TFile, app: App, settings: ExMemoSettings, fro
     const req = `I need to generate tags, category, description, and title for the following article. Requirements:
 
 1. Tags: ${settings.metaTagsPrompt}
-   Available tags: ${tag_options}. Feel free to create new ones if none are suitable.
+   Available tags: ${tag_options}. Prefer selecting from available tags. If none are suitable, choose the most relevant tags based on the article content.
 
 2. Category: ${settings.metaCategoryPrompt}
    Available categories: ${categories_options}. Must choose ONE from the available categories.
