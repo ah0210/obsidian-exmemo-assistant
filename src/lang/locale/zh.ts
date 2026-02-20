@@ -93,6 +93,13 @@ export default {
     "authorAvatar": "avatar",
     "authorAvatarDesc": "author.avatar",
 
+    "collections": "合集",
+    "collectionsDesc": "根据正文匹配候选合集并写入字段",
+    "enableCollections": "启用合集",
+    "enableCollectionsDesc": "启用后会在正文中匹配候选合集并写入 collections",
+    "collectionsList": "合集候选列表",
+    "collectionsListDesc": "可选合集列表，使用回车分隔",
+
     "cover": "封面图",
     "coverDesc": "根据提示生成并写入封面图",
     "enableCover": "启用封面图生成",

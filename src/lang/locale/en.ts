@@ -93,6 +93,13 @@ export default {
   "authorAvatar": "avatar",
   "authorAvatarDesc": "author.avatar",
 
+  "collections": "Collections",
+  "collectionsDesc": "Match candidate collections in content and write the field",
+  "enableCollections": "Enable collections",
+  "enableCollectionsDesc": "When enabled, match candidates in content and write collections",
+  "collectionsList": "Collections list",
+  "collectionsListDesc": "Optional collections list, separated by line breaks",
+
   "cover": "Cover image",
   "coverDesc": "Generate and write cover image from prompt",
   "enableCover": "Enable cover image",

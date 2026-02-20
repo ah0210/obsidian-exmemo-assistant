@@ -481,6 +481,39 @@ export class ExMemoSettingTab extends PluginSettingTab {
 		authorLinkSetting.setDisabled(!this.plugin.settings.metaAuthorEnabled);
 		authorAvatarSetting.setDisabled(!this.plugin.settings.metaAuthorEnabled);
 
+		new Setting(containerEl).setName(t("collections"))
+			.setDesc(t("collectionsDesc"))
+			.setHeading().setClass('setting-item-nested');
+
+		const collectionsListSetting = new Setting(containerEl)
+			.setName(t('collectionsList'))
+			.setDesc(t('collectionsListDesc'))
+			.setClass('setting-item-nested')
+			.addTextArea((text) => {
+				text.setValue(this.plugin.settings.metaCollections.join('\n'))
+					.onChange(async (value) => {
+						this.plugin.settings.metaCollections = value.split('\n').map(item => item.trim()).filter(item => item !== '');
+						await this.plugin.saveSettings();
+					});
+				text.inputEl.setAttr('rows', '5');
+				text.inputEl.addClass('setting-textarea');
+			});
+
+		new Setting(containerEl)
+			.setName(t("enableCollections"))
+			.setDesc(t("enableCollectionsDesc"))
+			.setClass('setting-item-nested')
+			.addToggle((toggle) => {
+				toggle.setValue(this.plugin.settings.metaCollectionsEnabled)
+					.onChange(async (value) => {
+						this.plugin.settings.metaCollectionsEnabled = value;
+						await this.plugin.saveSettings();
+						collectionsListSetting.setDisabled(!value);
+					});
+			});
+
+		collectionsListSetting.setDisabled(!this.plugin.settings.metaCollectionsEnabled);
+
 		new Setting(containerEl).setName(t("cover"))
 			.setDesc(t("coverDesc"))
 			.setHeading().setClass('setting-item-nested');

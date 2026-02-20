@@ -75,6 +75,11 @@ export async function adjustMdMeta(app: App, settings: ExMemoSettings) {
         }
     }
 
+    const collectionsUpdated = await addCollections(file, app, settings, frontMatter, force);
+    if (collectionsUpdated) {
+        hasChanges = true;
+    }
+
     const coverUpdated = await addCoverImage(file, app, settings, frontMatter, force);
     if (coverUpdated) {
         hasChanges = true;
@@ -97,6 +102,49 @@ export async function adjustMdMeta(app: App, settings: ExMemoSettings) {
     if (hasChanges) {
         new Notice(t('metaUpdated'));
     }
+}
+
+function matchCollections(content: string, candidates: string[]): string[] {
+    const results: string[] = [];
+    const lower = content.toLowerCase();
+    for (const item of candidates) {
+        const trimmed = item.trim();
+        if (!trimmed) {
+            continue;
+        }
+        const needle = trimmed.toLowerCase();
+        if (lower.includes(needle) && !results.includes(trimmed)) {
+            results.push(trimmed);
+        }
+    }
+    return results;
+}
+
+async function addCollections(file: TFile, app: App, settings: ExMemoSettings, frontMatter: any, force: boolean): Promise<boolean> {
+    if (!settings.metaCollectionsEnabled) {
+        return false;
+    }
+    const fieldName = 'collections';
+    const currentValue = frontMatter[fieldName];
+    const isEmpty = !currentValue || (Array.isArray(currentValue) && currentValue.length === 0) ||
+        (typeof currentValue === 'string' && currentValue.trim() === '');
+    if (!force && !isEmpty) {
+        return false;
+    }
+    const candidates = settings.metaCollections ?? [];
+    if (candidates.length === 0) {
+        return false;
+    }
+    const contentStr = await getContent(app, null, -1, '');
+    if (!contentStr) {
+        return false;
+    }
+    const matched = matchCollections(contentStr, candidates);
+    if (matched.length === 0) {
+        return false;
+    }
+    updateFrontMatter(file, app, fieldName, matched, 'update');
+    return true;
 }
 
 function extractImageLinks(content: string): string[] {
