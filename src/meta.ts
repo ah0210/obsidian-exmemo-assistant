@@ -182,12 +182,13 @@ async function addSlug(file: TFile, app: App, settings: ExMemoSettings, frontMat
     if (!contentStr) {
         return false;
     }
-    const req = `Generate an SEO-friendly English slug in the format "category-title".
+    const req = `Generate an SEO-friendly English slug.
 Requirements:
-- Use only English words
-- Lowercase letters, numbers, and hyphens only
-- No spaces or punctuation
-- Infer category and title from the article content
+- Use only lowercase English letters and hyphens (-)
+- Length should be 3 to 6 keyword segments
+- Do not use filler words like with/and/for/the/guide/tutorial
+- Put the most important keywords first
+- Keep it concise and strong
 Return only the slug.
 
 Article content:

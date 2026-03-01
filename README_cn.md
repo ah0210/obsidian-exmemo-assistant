@@ -30,6 +30,14 @@ ExMemo Assistant 提供智能化的文档管理功能。结合大型语言模型
 
 此外，生成文件的标题、生成日期和编辑日期等操作虽然常用但却繁琐。我们的工具提供一键生成这些元信息，大大简化了日常工作流程。
 
+### 近期新增与改进
+
+* 新增 Slug 生成功能：根据文章内容生成英文 SEO slug，格式为“分类-标题”，并写入 slug 字段。
+* 新增 Collections 自动匹配：从候选合集列表中匹配正文内容，写入 collections 字段。
+* 作者字段新增 avatar：支持写入 author.avatar。
+* 封面图逻辑优化：自动从正文中识别图片链接并写入 featuredImage 字段。
+* 设置项优化：新增对应开关与列表配置，功能可按需启用。
+
 ## License
 
 本项目采用 GNU Lesser General Public License v3.0 许可证。有关详细信息，请参见 [LICENSE](./LICENSE) 文件。
