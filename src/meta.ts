@@ -39,7 +39,12 @@ export async function adjustMdMeta(app: App, settings: ExMemoSettings) {
         await addMetaByLLM(file, app, settings, frontMatter, force);
         hasChanges = true;
     }
-        
+
+    const slugUpdated = await addSlug(file, app, settings, frontMatter, force);
+    if (slugUpdated) {
+        hasChanges = true;
+    }
+
     // 添加时间相关元数据 - 只在功能启用时执行
     if (settings.metaEditTimeEnabled) {
         try {
@@ -144,6 +149,59 @@ async function addCollections(file: TFile, app: App, settings: ExMemoSettings, f
         return false;
     }
     updateFrontMatter(file, app, fieldName, matched, 'update');
+    return true;
+}
+
+function slugify(value: string): string {
+    return value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+async function addSlug(file: TFile, app: App, settings: ExMemoSettings, frontMatter: any, force: boolean): Promise<boolean> {
+    if (!settings.metaSlugEnabled) {
+        return false;
+    }
+    if (settings.metaUpdateMethod === 'no-llm') {
+        return false;
+    }
+    const fieldName = 'slug';
+    const currentValue = frontMatter[fieldName];
+    const isEmpty = !currentValue || (typeof currentValue === 'string' && currentValue.trim() === '');
+    if (!force && !isEmpty) {
+        return false;
+    }
+    let contentStr = '';
+    if (settings.metaIsTruncate) {
+        contentStr = await getContent(app, null, settings.metaMaxTokens, settings.metaTruncateMethod);
+    } else {
+        contentStr = await getContent(app, null, -1, '');
+    }
+    if (!contentStr) {
+        return false;
+    }
+    const req = `Generate an SEO-friendly English slug in the format "category-title".
+Requirements:
+- Use only English words
+- Lowercase letters, numbers, and hyphens only
+- No spaces or punctuation
+- Infer category and title from the article content
+Return only the slug.
+
+Article content:
+
+${contentStr}`;
+    const raw = (await callLLM(req, settings))?.trim();
+    if (!raw) {
+        return false;
+    }
+    const slug = slugify(raw);
+    if (!slug) {
+        return false;
+    }
+    updateFrontMatter(file, app, fieldName, slug, 'update');
     return true;
 }
 

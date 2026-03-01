@@ -367,6 +367,22 @@ export class ExMemoSettingTab extends PluginSettingTab {
 
 		titlePromptSetting.setDisabled(!this.plugin.settings.metaTitleEnabled);
 
+		new Setting(containerEl).setName(t("slug"))
+			.setDesc(t("slugDesc"))
+			.setHeading().setClass('setting-item-nested');
+
+		new Setting(containerEl)
+			.setName(t("enableSlug"))
+			.setDesc(t("enableSlugDesc"))
+			.setClass('setting-item-nested')
+			.addToggle((toggle) => {
+				toggle.setValue(this.plugin.settings.metaSlugEnabled)
+					.onChange(async (value) => {
+						this.plugin.settings.metaSlugEnabled = value;
+						await this.plugin.saveSettings();
+					});
+			});
+
 		// 新增编辑时间设置部分
 		new Setting(containerEl).setName(t("editTime"))
 			.setDesc(t("editTimeDesc"))
@@ -648,17 +664,5 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					}));
 		});
 
-		// 捐赠部分
-		new Setting(containerEl).setName(t('donate')).setHeading();
-		new Setting(containerEl)
-			.setName(t('supportThisPlugin'))
-			.setDesc(t('supportThisPluginDesc'))
-			.addButton((button) => {
-				button.setButtonText(t('bugMeACoffee'))
-					.setCta()
-					.onClick(() => {
-						window.open('https://buymeacoffee.com/xieyan0811y', '_blank');
-					});
-			});
 	}
 }

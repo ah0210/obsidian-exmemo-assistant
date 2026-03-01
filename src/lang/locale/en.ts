@@ -153,12 +153,10 @@ export default {
   "defaultCategoryPrompt": "Please select a suitable category for this document",
   "categoryUnknown": "Unknown",
   "defaultCategories": "[\"Travel\", \"Shopping\", \"Mood\", \"Book Review\", \"Tech & Knowledge\", \"Entertainment\", \"Papers to Read\", \"Ideas & Inspiration\", \"Todo\", \"Methodology\", \"Work Thoughts\", \"Investment\", \"Books to Read\", \"Personal Info\", \"Accounting\", \"Tasks\", \"Health\", \"Excerpts\", \"Daily Life\", \"Worldview\", \"Food\"]",
-
-  // Donation Related
-  "donate": "Donate",
-  "supportThisPlugin": "Support this plugin",
-  "supportThisPluginDesc": "If you find this plugin helpful, consider buying me a coffee!",
-  "bugMeACoffee": "Buy me a coffee",
+  "slug": "Slug",
+  "slugDesc": "Generate an English SEO slug (category-title)",
+  "enableSlug": "Enable slug",
+  "enableSlugDesc": "When enabled, generate slug based on content",
 
   // Commands
   "exmemoAdjustMeta": "Generate meta data"

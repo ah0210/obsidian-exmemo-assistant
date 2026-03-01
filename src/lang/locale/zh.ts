@@ -153,12 +153,10 @@ export default {
     "defaultCategoryPrompt": "请为这篇文档选择一个合适的类别",
     "categoryUnknown": "未分类",
     "defaultCategories": "[\"旅行\", \"购物\", \"心情\", \"读后感\", \"知识科技\", \"娱乐\", \"待读论文\", \"灵感创意\", \"待办事项\", \"方法论\", \"工作思考\", \"投资\", \"待读书\", \"个人信息\", \"记帐\", \"待做\", \"健康\", \"摘录\", \"日常琐事\", \"世界观\", \"美食\"]",
-
-    // 捐赠相关
-    "donate": "捐赠",
-    "supportThisPlugin": "支持此插件",
-    "supportThisPluginDesc": "如果您喜欢这个插件，可以请我喝杯咖啡",
-    "bugMeACoffee": "请我喝杯咖啡",
+    "slug": "Slug",
+    "slugDesc": "自动生成英文 SEO slug（分类-标题）",
+    "enableSlug": "启用 slug",
+    "enableSlugDesc": "启用后会根据内容生成 slug 并写入字段",
 
     // 命令相关
     "exmemoAdjustMeta": "生成元数据"
