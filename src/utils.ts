@@ -3,33 +3,98 @@ import OpenAI from "openai";
 import { ExMemoSettings } from "./settings";
 import { t } from "./lang/helpers"
 
+// 延时函数
+function delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// 判断是否为可重试的错误
+function isRetryableError(error: unknown): boolean {
+    if (error instanceof Error) {
+        const message = error.message.toLowerCase();
+        return message.includes('timeout') || 
+               message.includes('network') || 
+               message.includes('rate limit') ||
+               message.includes('500') ||
+               message.includes('502') ||
+               message.includes('503') ||
+               message.includes('504');
+    }
+    return false;
+}
+
 export async function callLLM(req: string, settings: ExMemoSettings): Promise<string> {
     let ret = '';
     let info = new Notice(t("llmLoading"), 0);
-    //console.log('callLLM:', req.length, 'chars', req);
-    //console.warn('callLLM:', settings.llmBaseUrl, settings.llmToken);
-    const model = (settings.llmModelNames?.[0] ?? '').trim() || 'gpt-4o';
-    const openai = new OpenAI({
-        apiKey: settings.llmToken,
-        baseURL: settings.llmBaseUrl,
-        dangerouslyAllowBrowser: true
-    });
-    try {
-        const completion = await openai.chat.completions.create({
-            model,
-            messages: [
-                { "role": "user", "content": req }
-            ]
-        });
-        if (completion.choices.length > 0) {
-            ret = completion.choices[0].message['content'] || ret;
-        }
-    } catch (error) {
-        new Notice(t("llmError") + "\n" + error as string);
-        console.warn('Error:', error as string);
+    
+    const models = settings.llmModelNames?.filter(m => m.trim()) || [];
+    if (models.length === 0) {
+        models.push('gpt-4o');
     }
+
+    const maxRetries = Math.max(1, settings.llmMaxRetries || 3);
+    const timeout = settings.llmTimeout || 60000;
+    
+    let lastError: unknown = null;
+
+    // 遍历所有模型进行尝试
+    for (let modelIndex = 0; modelIndex < models.length; modelIndex++) {
+        const model = models[modelIndex].trim();
+        
+        // 对每个模型进行重试
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                const openai = new OpenAI({
+                    apiKey: settings.llmToken,
+                    baseURL: settings.llmBaseUrl,
+                    dangerouslyAllowBrowser: true,
+                    timeout: timeout
+                });
+
+                const completion = await openai.chat.completions.create({
+                    model,
+                    messages: [
+                        {
+                            "role": "system",
+                            "content": "You are a helpful assistant that generates metadata for articles. Always respond with valid JSON format only, without any markdown code blocks or additional text."
+                        },
+                        { "role": "user", "content": req }
+                    ],
+                    temperature: settings.llmTemperature ?? 0.7,
+                    max_tokens: settings.llmMaxTokens ?? 2048
+                });
+
+                if (completion.choices.length > 0) {
+                    ret = completion.choices[0].message['content'] || ret;
+                    info.hide();
+                    return ret;
+                }
+            } catch (error) {
+                lastError = error;
+                console.warn(`Model ${model} attempt ${attempt + 1} failed:`, error);
+
+                // 如果不是最后一个模型，不进行重试，直接尝试下一个模型
+                if (modelIndex < models.length - 1) {
+                    break;
+                }
+
+                // 如果是最后一个模型且不是最后一次尝试，等待后重试
+                if (attempt < maxRetries - 1 && isRetryableError(error)) {
+                    const waitTime = Math.pow(2, attempt) * 1000; // 指数退避
+                    new Notice(`${t("llmError")}, retrying in ${waitTime / 1000}s...`, 2000);
+                    await delay(waitTime);
+                }
+            }
+        }
+    }
+
+    // 所有尝试都失败了
     info.hide();
-    return ret
+    if (lastError) {
+        new Notice(t("llmError") + "\n" + String(lastError));
+        console.warn('All attempts failed:', lastError);
+    }
+    return ret;
 }
 
 
@@ -115,6 +180,13 @@ export async function loadTags(app: App): Promise<Record<string, number>> {
     return tagsMap;
 }
 
+// 剔除 frontmatter
+function stripFrontmatter(content: string): string {
+    // 匹配 --- 包裹的 frontmatter
+    const frontmatterRegex = /^---\s*$[\s\S]*?^---\s*$/m;
+    return content.replace(frontmatterRegex, '').trimStart();
+}
+
 export async function getContent(app: App, file: TFile | null, limit: number = 1000, method: string = "head_only"): Promise<string> {
     let content_str = '';
     if (file !== null) { // read from file
@@ -133,6 +205,9 @@ export async function getContent(app: App, file: TFile | null, limit: number = 1
     if (content_str.length === 0) {
         return '';
     }
+
+    // 剔除 frontmatter
+    content_str = stripFrontmatter(content_str);
     const tokens = splitIntoTokens(content_str);
     //console.log('token_count', tokens.length);
     if (tokens.length > limit && limit > 0) {

@@ -24,24 +24,38 @@ export async function adjustMdMeta(app: App, settings: ExMemoSettings) {
     // 根据更新方法决定是否强制更新
     const force = settings.metaUpdateMethod === 'force';
     
-    // 添加标签、类别、描述和标题
-    if (!frontMatter[settings.metaTagsFieldName] || 
-        frontMatter[settings.metaTagsFieldName]?.length === 0 ||
-        !frontMatter[settings.metaDescriptionFieldName] || 
+    // 检查是否需要调用 LLM
+    const needsLLM = settings.metaUpdateMethod !== 'no-llm';
+    
+    // 确定哪些字段需要更新
+    const needsTags = !frontMatter[settings.metaTagsFieldName] || 
+        (Array.isArray(frontMatter[settings.metaTagsFieldName]) && frontMatter[settings.metaTagsFieldName].length === 0) ||
+        force;
+    const needsDescription = !frontMatter[settings.metaDescriptionFieldName] || 
         frontMatter[settings.metaDescriptionFieldName]?.trim() === '' ||
-        (settings.metaTitleEnabled && 
-            (!frontMatter[settings.metaTitleFieldName] || 
-             frontMatter[settings.metaTitleFieldName]?.trim() === '')) ||
-        (settings.metaCategoryEnabled && 
-            (!frontMatter[settings.metaCategoryFieldName] || 
-             frontMatter[settings.metaCategoryFieldName]?.trim() === '')) ||
-        force) {
-        await addMetaByLLM(file, app, settings, frontMatter, force);
-        hasChanges = true;
-    }
+        force;
+    const needsTitle = settings.metaTitleEnabled && (
+        !frontMatter[settings.metaTitleFieldName] || 
+        frontMatter[settings.metaTitleFieldName]?.trim() === '' ||
+        force);
+    const needsCategory = settings.metaCategoryEnabled && (
+        !frontMatter[settings.metaCategoryFieldName] || 
+        frontMatter[settings.metaCategoryFieldName]?.trim() === '' ||
+        force);
+    const needsSlug = settings.metaSlugEnabled && (
+        !frontMatter['slug'] || 
+        frontMatter['slug']?.trim() === '' ||
+        force);
 
-    const slugUpdated = await addSlug(file, app, settings, frontMatter, force);
-    if (slugUpdated) {
+    // 添加标签、类别、描述、标题和 slug（一次 LLM 调用）
+    if (needsLLM && (needsTags || needsDescription || needsTitle || needsCategory || needsSlug)) {
+        await addMetaByLLM(file, app, settings, frontMatter, {
+            tags: needsTags,
+            description: needsDescription,
+            title: needsTitle,
+            category: needsCategory,
+            slug: needsSlug
+        }, force);
         hasChanges = true;
     }
 
@@ -160,51 +174,7 @@ function slugify(value: string): string {
         .replace(/^-+|-+$/g, '');
 }
 
-async function addSlug(file: TFile, app: App, settings: ExMemoSettings, frontMatter: any, force: boolean): Promise<boolean> {
-    if (!settings.metaSlugEnabled) {
-        return false;
-    }
-    if (settings.metaUpdateMethod === 'no-llm') {
-        return false;
-    }
-    const fieldName = 'slug';
-    const currentValue = frontMatter[fieldName];
-    const isEmpty = !currentValue || (typeof currentValue === 'string' && currentValue.trim() === '');
-    if (!force && !isEmpty) {
-        return false;
-    }
-    let contentStr = '';
-    if (settings.metaIsTruncate) {
-        contentStr = await getContent(app, null, settings.metaMaxTokens, settings.metaTruncateMethod);
-    } else {
-        contentStr = await getContent(app, null, -1, '');
-    }
-    if (!contentStr) {
-        return false;
-    }
-    const req = `Generate an SEO-friendly English slug.
-Requirements:
-- Use only lowercase English letters and hyphens (-)
-- Length should be 3 to 6 keyword segments
-- Do not use filler words like with/and/for/the/guide/tutorial
-- Put the most important keywords first
-- Keep it concise and strong
-Return only the slug.
 
-Article content:
-
-${contentStr}`;
-    const raw = (await callLLM(req, settings))?.trim();
-    if (!raw) {
-        return false;
-    }
-    const slug = slugify(raw);
-    if (!slug) {
-        return false;
-    }
-    updateFrontMatter(file, app, fieldName, slug, 'update');
-    return true;
-}
 
 function extractImageLinks(content: string): string[] {
     const results: string[] = [];
@@ -274,7 +244,49 @@ async function addCoverImage(file: TFile, app: App, settings: ExMemoSettings, fr
     return true;
 }
 
-async function addMetaByLLM(file: TFile, app: App, settings: ExMemoSettings, frontMatter: any, force: boolean = false) {
+// 改进的 JSON 解析函数
+function parseLLMResponse(response: string): any {
+    if (!response) return null;
+    
+    // 方法 1: 直接尝试解析
+    try {
+        return JSON.parse(response.trim());
+    } catch {
+        // 继续尝试其他方法
+    }
+
+    // 方法 2: 提取 JSON 块
+    let jsonMatch = response.match(/{[\s\S]*}/);
+    if (jsonMatch) {
+        try {
+            return JSON.parse(jsonMatch[0]);
+        } catch {
+            // 继续尝试
+        }
+    }
+
+    // 方法 3: 清理 markdown 代码块标记后尝试
+    const cleaned = response.replace(/```(?:json)?\s*/g, '').trim();
+    jsonMatch = cleaned.match(/{[\s\S]*}/);
+    if (jsonMatch) {
+        try {
+            return JSON.parse(jsonMatch[0]);
+        } catch (error) {
+            console.warn("JSON 解析失败:", error);
+        }
+    }
+
+    return null;
+}
+
+async function addMetaByLLM(
+    file: TFile, 
+    app: App, 
+    settings: ExMemoSettings, 
+    frontMatter: any, 
+    fields: { tags: boolean; description: boolean; title: boolean; category: boolean; slug: boolean },
+    force: boolean = false
+) {
     let content_str = '';
     if (settings.metaIsTruncate) {
         content_str = await getContent(app, null, settings.metaMaxTokens, settings.metaTruncateMethod);
@@ -282,30 +294,60 @@ async function addMetaByLLM(file: TFile, app: App, settings: ExMemoSettings, fro
         content_str = await getContent(app, null, -1, '');
     }
     
-    const tag_options = settings.tags.join(',');
+    const tag_options = settings.tags.join(',') || t('categoryUnknown');
     let categories_options = settings.categories.join(',');
     if (categories_options === '') {
         categories_options = t('categoryUnknown');
     }
 
-    const req = `I need to generate tags, category, description, and title for the following article. Requirements:
+    // 构建提示词
+    let req = 'I need to generate metadata for the following article. ';
+    
+    const requirements: string[] = [];
+    
+    if (fields.tags) {
+        requirements.push(`1. Tags: ${settings.metaTagsPrompt}
+   Available tags: ${tag_options}. Prefer selecting from available tags. If none are suitable, choose the most relevant tags based on the article content.`);
+    }
+    
+    if (fields.category) {
+        requirements.push(`2. Category: ${settings.metaCategoryPrompt}
+   Available categories: ${categories_options}. Must choose ONE from the available categories.`);
+    }
+    
+    if (fields.description) {
+        requirements.push(`3. Description: ${settings.metaDescription}`);
+    }
+    
+    if (fields.title) {
+        requirements.push(`4. Title: ${settings.metaTitlePrompt}`);
+    }
+    
+    if (fields.slug) {
+        requirements.push(`5. Slug: Generate an SEO-friendly English slug.
+   Requirements:
+   - Use only lowercase English letters and hyphens (-)
+   - Length should be 3 to 6 keyword segments
+   - Do not use filler words like with/and/for/the/guide/tutorial
+   - Put the most important keywords first
+   - Keep it concise and strong`);
+    }
 
-1. Tags: ${settings.metaTagsPrompt}
-   Available tags: ${tag_options}. Prefer selecting from available tags. If none are suitable, choose the most relevant tags based on the article content.
+    req += `\nRequirements:\n${requirements.join('\n\n')}`;
+    
+    // 构建 JSON schema
+    const jsonFields: string[] = [];
+    if (fields.tags) jsonFields.push('    "tags": "tag1,tag2,tag3"');
+    if (fields.category) jsonFields.push('    "category": "category_name"');
+    if (fields.description) jsonFields.push('    "description": "brief summary"');
+    if (fields.title) jsonFields.push('    "title": "article title"');
+    if (fields.slug) jsonFields.push('    "slug": "seo-friendly-slug"');
 
-2. Category: ${settings.metaCategoryPrompt}
-   Available categories: ${categories_options}. Must choose ONE from the available categories.
+    req += `
 
-3. Description: ${settings.metaDescription}
-
-4. Title: ${settings.metaTitlePrompt}
-
-Please return in the following JSON format:
+Please return ONLY valid JSON format, without any markdown code blocks or additional text:
 {
-    "tags": "tag1,tag2,tag3",
-    "category": "category_name",
-    "description": "brief summary",
-    "title": "article title"
+${jsonFields.join(',\n')}
 }
 
 Article content:
@@ -316,41 +358,39 @@ ${content_str}`;
     if (ret === "" || ret === undefined || ret === null) {
         return;
     }
-    ret = ret.replace(/`/g, '');
 
-    let ret_json = {} as { tags?: string; category?: string; description?: string; title?: string };
-    try {
-        let json_str = ret.match(/{[^]*}/);
-        if (json_str) {
-            ret_json = JSON.parse(json_str[0]) as { tags?: string; category?: string; description?: string; title?: string };
-        }        
-    } catch (error) {
-        new Notice(t('parseError') + "\n" + error);
-        console.error("parseError:", error);
+    const ret_json = parseLLMResponse(ret);
+    if (!ret_json) {
+        new Notice(t('parseError'));
+        console.error("Failed to parse LLM response:", ret);
         return;
     }
     
     // 检查并更新各个字段
-    if (ret_json.tags) {
-        const tags = ret_json.tags.split(',');
-        updateFrontMatter(file, app, settings.metaTagsFieldName, tags, 'append');
+    if (fields.tags && ret_json.tags) {
+        // 处理标签：去重、过滤空标签
+        const tags = ret_json.tags.split(',')
+            .map((t: string) => t.trim())
+            .filter((t: string) => t.length > 0);
+        const uniqueTags = Array.from(new Set(tags));
+        updateFrontMatter(file, app, settings.metaTagsFieldName, uniqueTags, 'append');
     }
     
-    if (ret_json.category && settings.metaCategoryEnabled) {
+    if (fields.category && ret_json.category && settings.metaCategoryEnabled) {
         const currentValue = frontMatter[settings.metaCategoryFieldName];
         const isEmpty = !currentValue || currentValue.trim() === '';
         updateFrontMatter(file, app, settings.metaCategoryFieldName, ret_json.category, 
             force || isEmpty ? 'update' : 'keep');
     }
 
-    if (ret_json.description) {
+    if (fields.description && ret_json.description) {
         const currentValue = frontMatter[settings.metaDescriptionFieldName];
         const isEmpty = !currentValue || currentValue.trim() === '';
         updateFrontMatter(file, app, settings.metaDescriptionFieldName, ret_json.description, 
             force || isEmpty ? 'update' : 'keep');
     }
 
-    if (settings.metaTitleEnabled && ret_json.title) {
+    if (fields.title && settings.metaTitleEnabled && ret_json.title) {
         let title = ret_json.title.trim();
         if ((title.startsWith('"') && title.endsWith('"')) || 
             (title.startsWith("'") && title.endsWith("'"))) {
@@ -360,6 +400,16 @@ ${content_str}`;
         const isEmpty = !currentValue || currentValue.trim() === '';
         updateFrontMatter(file, app, settings.metaTitleFieldName, title, 
             force || isEmpty ? 'update' : 'keep');
+    }
+
+    if (fields.slug && ret_json.slug) {
+        const slug = slugify(ret_json.slug);
+        if (slug) {
+            const currentValue = frontMatter['slug'];
+            const isEmpty = !currentValue || currentValue.trim() === '';
+            updateFrontMatter(file, app, 'slug', slug, 
+                force || isEmpty ? 'update' : 'keep');
+        }
     }
 }
 

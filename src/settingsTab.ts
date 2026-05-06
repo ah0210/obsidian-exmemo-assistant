@@ -97,6 +97,55 @@ export class ExMemoSettingTab extends PluginSettingTab {
 				});
 		});
 
+		// LLM 高级设置
+		new Setting(containerEl)
+			.setName(t("llmMaxRetries"))
+			.setDesc(t("llmMaxRetriesDesc"))
+			.setClass('setting-item-nested')
+			.addText((text) => {
+				text.setValue(this.plugin.settings.llmMaxRetries.toString())
+					.onChange(async (value) => {
+						this.plugin.settings.llmMaxRetries = parseInt(value) || 3;
+						await this.plugin.saveSettings();
+					});
+			});
+
+		new Setting(containerEl)
+			.setName(t("llmTimeout"))
+			.setDesc(t("llmTimeoutDesc"))
+			.setClass('setting-item-nested')
+			.addText((text) => {
+				text.setValue(this.plugin.settings.llmTimeout.toString())
+					.onChange(async (value) => {
+						this.plugin.settings.llmTimeout = parseInt(value) || 60000;
+						await this.plugin.saveSettings();
+					});
+			});
+
+		new Setting(containerEl)
+			.setName(t("llmTemperature"))
+			.setDesc(t("llmTemperatureDesc"))
+			.setClass('setting-item-nested')
+			.addText((text) => {
+				text.setValue(this.plugin.settings.llmTemperature.toString())
+					.onChange(async (value) => {
+						this.plugin.settings.llmTemperature = parseFloat(value) || 0.7;
+						await this.plugin.saveSettings();
+					});
+			});
+
+		new Setting(containerEl)
+			.setName(t("llmMaxTokens"))
+			.setDesc(t("llmMaxTokensDesc"))
+			.setClass('setting-item-nested')
+			.addText((text) => {
+				text.setValue(this.plugin.settings.llmMaxTokens.toString())
+					.onChange(async (value) => {
+						this.plugin.settings.llmMaxTokens = parseInt(value) || 2048;
+						await this.plugin.saveSettings();
+					});
+			});
+
 		// 更新元数据设置部分
 		new Setting(containerEl).setName(t("metaUpdateSetting"))
 			.setHeading();

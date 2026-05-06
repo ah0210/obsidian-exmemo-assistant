@@ -6,6 +6,10 @@ export interface ExMemoSettings {
     llmModelNames: string[];
     llmPrompts: Record<string, { count: number, lastAccess: number }>;
     llmDialogEdit: boolean
+    llmMaxRetries: number;
+    llmTimeout: number;
+    llmTemperature: number;
+    llmMaxTokens: number;
     tags: string[];
     metaAuthorEnabled: boolean;
     metaAuthorName: string;
@@ -44,6 +48,10 @@ export const DEFAULT_SETTINGS: ExMemoSettings = {
 	llmModelNames: ['gpt-4o'],
 	llmPrompts: {},
 	llmDialogEdit: false,
+	llmMaxRetries: 3,
+	llmTimeout: 60000,
+	llmTemperature: 0.7,
+	llmMaxTokens: 2048,
 	tags: [],
 	metaAuthorEnabled: false,
 	metaAuthorName: '',
