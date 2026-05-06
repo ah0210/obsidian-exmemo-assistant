@@ -250,7 +250,7 @@ function extractImageLinks(content: string): string[] {
 }
 
 async function addCoverImage(file: TFile, app: App, settings: ExMemoSettings, frontMatter: any, force: boolean): Promise<boolean> {
-    if (!settings.metaCoverEnabled) {
+    if (!settings.metaExtractCoverEnabled) {
         return false;
     }
     const fieldName = 'featuredImage';

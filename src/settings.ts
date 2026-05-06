@@ -1,46 +1,41 @@
 import { t } from "./lang/helpers";
 
 export interface ExMemoSettings {
-	llmToken: string;
-	llmBaseUrl: string;
-	llmModelNames: string[];
-	llmPrompts: Record<string, { count: number, lastAccess: number }>;
-	llmDialogEdit: boolean
-	tags: string[];
-	metaAuthorEnabled: boolean;
-	metaAuthorName: string;
-	metaAuthorLink: string;
-	metaAuthorAvatar: string;
-	metaCollectionsEnabled: boolean;
-	metaCollections: string[];
-	metaCoverEnabled: boolean;
-	metaCoverFieldName: string;
-	metaCoverPrompt: string;
-	metaCoverImageModel: string;
-	metaCoverImageBaseUrl: string;
-	metaCoverImageSize: string;
-	metaIsTruncate: boolean;
-	metaMaxTokens: number;
-	metaTruncateMethod: string;
-	metaUpdateMethod: string;
-	metaDescription: string;
-	metaTitleEnabled: boolean;
-	metaTitlePrompt: string;
-	metaSlugEnabled: boolean;
-	metaEditTimeEnabled: boolean;
-	metaEditTimeFormat: string;
-	selectExcludedFolders: string[];
-	metaTagsFieldName: string;
-	metaDescriptionFieldName: string;
-	metaTitleFieldName: string;
-	metaUpdatedFieldName: string;
-	metaCreatedFieldName: string;
-	metaTagsPrompt: string;
-	customMetadata: Array<{key: string, value: string}>;
-	metaCategoryFieldName: string;
-	categories: string[];
-	metaCategoryPrompt: string;
-	metaCategoryEnabled: boolean;
+    llmToken: string;
+    llmBaseUrl: string;
+    llmModelNames: string[];
+    llmPrompts: Record<string, { count: number, lastAccess: number }>;
+    llmDialogEdit: boolean
+    tags: string[];
+    metaAuthorEnabled: boolean;
+    metaAuthorName: string;
+    metaAuthorLink: string;
+    metaAuthorAvatar: string;
+    metaCollectionsEnabled: boolean;
+    metaCollections: string[];
+    metaExtractCoverEnabled: boolean;
+    metaIsTruncate: boolean;
+    metaMaxTokens: number;
+    metaTruncateMethod: string;
+    metaUpdateMethod: string;
+    metaDescription: string;
+    metaTitleEnabled: boolean;
+    metaTitlePrompt: string;
+    metaSlugEnabled: boolean;
+    metaEditTimeEnabled: boolean;
+    metaEditTimeFormat: string;
+    selectExcludedFolders: string[];
+    metaTagsFieldName: string;
+    metaDescriptionFieldName: string;
+    metaTitleFieldName: string;
+    metaUpdatedFieldName: string;
+    metaCreatedFieldName: string;
+    metaTagsPrompt: string;
+    customMetadata: Array<{key: string, value: string}>;
+    metaCategoryFieldName: string;
+    categories: string[];
+    metaCategoryPrompt: string;
+    metaCategoryEnabled: boolean;
 }
 
 export const DEFAULT_SETTINGS: ExMemoSettings = {
@@ -56,12 +51,7 @@ export const DEFAULT_SETTINGS: ExMemoSettings = {
 	metaAuthorAvatar: '',
 	metaCollectionsEnabled: false,
 	metaCollections: [],
-	metaCoverEnabled: false,
-	metaCoverFieldName: 'cover',
-	metaCoverPrompt: t('defaultCoverPrompt'),
-	metaCoverImageModel: '',
-	metaCoverImageBaseUrl: 'http://127.0.0.1:7860',
-	metaCoverImageSize: '1024x1024',
+	metaExtractCoverEnabled: true,
 	metaIsTruncate: true,
 	metaMaxTokens: 1000,
 	metaTruncateMethod: 'head_only',

@@ -530,93 +530,22 @@ export class ExMemoSettingTab extends PluginSettingTab {
 
 		collectionsListSetting.setDisabled(!this.plugin.settings.metaCollectionsEnabled);
 
-		new Setting(containerEl).setName(t("cover"))
-			.setDesc(t("coverDesc"))
+		// 提取封面图设置
+		new Setting(containerEl).setName(t("extractCover"))
+			.setDesc(t("extractCoverDesc"))
 			.setHeading().setClass('setting-item-nested');
 
-		const coverFieldNameSetting = new Setting(containerEl)
-			.setName(t('coverFieldName'))
-			.setDesc(t('coverFieldNameDesc'))
-			.setClass('setting-item-nested')
-			.addText(text => text
-				.setValue(this.plugin.settings.metaCoverFieldName)
-				.onChange(async (value) => {
-					this.plugin.settings.metaCoverFieldName = value || 'cover';
-					await this.plugin.saveSettings();
-				}));
-
-		const coverPromptSetting = new Setting(containerEl)
-			.setName(t('coverPrompt'))
-			.setDesc(t('coverPromptDesc'))
-			.setClass('setting-item-nested')
-			.addTextArea(text => {
-				text.setPlaceholder(this.plugin.settings.metaCoverPrompt)
-					.setValue(this.plugin.settings.metaCoverPrompt)
-					.onChange(async (value) => {
-						this.plugin.settings.metaCoverPrompt = value;
-						await this.plugin.saveSettings();
-					});
-				text.inputEl.setAttr('rows', '3');
-				text.inputEl.addClass('setting-textarea');
-			});
-
-		const coverImageModelSetting = new Setting(containerEl)
-			.setName(t('coverImageModel'))
-			.setDesc(t('coverImageModelDesc'))
-			.setClass('setting-item-nested')
-			.addText(text => text
-				.setValue(this.plugin.settings.metaCoverImageModel)
-				.onChange(async (value) => {
-					this.plugin.settings.metaCoverImageModel = value;
-					await this.plugin.saveSettings();
-				}));
-
-		const coverImageBaseUrlSetting = new Setting(containerEl)
-			.setName(t('coverImageBaseUrl'))
-			.setDesc(t('coverImageBaseUrlDesc'))
-			.setClass('setting-item-nested')
-			.addText(text => text
-				.setValue(this.plugin.settings.metaCoverImageBaseUrl)
-				.setPlaceholder('http://127.0.0.1:7860')
-				.onChange(async (value) => {
-					this.plugin.settings.metaCoverImageBaseUrl = value || 'http://127.0.0.1:7860';
-					await this.plugin.saveSettings();
-				}));
-
-		const coverImageSizeSetting = new Setting(containerEl)
-			.setName(t('coverImageSize'))
-			.setDesc(t('coverImageSizeDesc'))
-			.setClass('setting-item-nested')
-			.addText(text => text
-				.setValue(this.plugin.settings.metaCoverImageSize)
-				.setPlaceholder('1024x1024')
-				.onChange(async (value) => {
-					this.plugin.settings.metaCoverImageSize = value || '1024x1024';
-					await this.plugin.saveSettings();
-				}));
-
 		new Setting(containerEl)
-			.setName(t("enableCover"))
-			.setDesc(t("enableCoverDesc"))
+			.setName(t("enableExtractCover"))
+			.setDesc(t("enableExtractCoverDesc"))
 			.setClass('setting-item-nested')
 			.addToggle((toggle) => {
-				toggle.setValue(this.plugin.settings.metaCoverEnabled)
+				toggle.setValue(this.plugin.settings.metaExtractCoverEnabled)
 					.onChange(async (value) => {
-						this.plugin.settings.metaCoverEnabled = value;
+						this.plugin.settings.metaExtractCoverEnabled = value;
 						await this.plugin.saveSettings();
-						coverFieldNameSetting.setDisabled(!value);
-						coverPromptSetting.setDisabled(!value);
-						coverImageModelSetting.setDisabled(!value);
-					coverImageBaseUrlSetting.setDisabled(!value);
-						coverImageSizeSetting.setDisabled(!value);
 					});
 			});
-
-		coverFieldNameSetting.setDisabled(!this.plugin.settings.metaCoverEnabled);
-		coverPromptSetting.setDisabled(!this.plugin.settings.metaCoverEnabled);
-		coverImageModelSetting.setDisabled(!this.plugin.settings.metaCoverEnabled);
-		coverImageBaseUrlSetting.setDisabled(!this.plugin.settings.metaCoverEnabled);
-		coverImageSizeSetting.setDisabled(!this.plugin.settings.metaCoverEnabled);
 
 		// 添加自定义元数据设置
 		new Setting(containerEl)
