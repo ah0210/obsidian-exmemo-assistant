@@ -1,37 +1,98 @@
-English | [中文简体](https://github.com/exmemo-ai/obsidian-exmemo-assistant/blob/master/README_cn.md)
+## 介绍
 
-## Introduction
+ExMemo Assistant 提供智能化的文档管理功能。结合大型语言模型（LLM）的能力，它能自动生成和更新文件的元信息，从而实现高效的信息管理和文档编辑。
 
-ExMemo Assistant provides intelligent document management features. Leveraging the capabilities of large language models (LLM), it generates and updates file metadata automatically, thereby achieving efficient information management and document editing.
+生成并更新文件的元信息，包括标签、简述、标题、编辑时间等。
 
-Generate and update file metadata, including tags, descriptions, titles, edit times, etc.
+## 使用方法
 
-> **Important Note**: The plugin [obsidian-exmemo-tools](https://github.com/exmemo-ai/obsidian-exmemo-tools/) now covers all the features supported by this project and adds more functionality. Future development and updates will focus on exmemo-tools, so we recommend migrating to that tool.
+### 设置
 
-### Tool Usage Video Tutorial
-[![Watch the video](https://img.youtube.com/vi/5naS9p8a1IE/hqdefault.jpg)](https://www.youtube.com/watch?v=5naS9p8a1IE)
+在使用本工具前，请确保完成以下设置：
 
-## Usage
+* 首先，设置与 LLM 相关的选项，包括 API 密钥、基础 URL 和模型名称。
+* 如果使用自动生成标签功能，建议在使用前预先填写标签列表，或从当前仓库中自动提取已有标签，以便生成的标签更符合用户的风格。
+* 若需修改生成简述的方法，请在设置中调整生成描述的提示词。
+* 对于较长文章的元数据生成，调用模型时可能会产生较高费用，建议通过设置中的"内容截断"功能来控制成本。
 
-### Setup
+#### 内容截断功能详解
 
-Before using the tool, ensure the following setup is completed:
+**1. 内容太长是否截断**
 
-* First, configure options related to LLM, including the API key, base URL, and model name.
-* If using the auto-generate tags feature, it is recommended to pre-fill the tag list or automatically extract existing tags from the current repository to ensure generated tags align with the user's style.
-* To modify the method for generating descriptions, adjust the prompt words for generating descriptions in the settings.
-* For generating metadata for longer articles, the model call may incur higher costs. It is recommended to control costs using the "content truncation" feature in the settings.
+控制是否在发送给 LLM 前对长文章进行截断。
 
-### Generating Metadata
+- **开启时**：如果文章内容（去除 frontmatter 后）的 token 数超过「最大内容长度」限制，就会按照选择的截断方式处理
+- **关闭时**：直接发送完整文章给 LLM，不管内容多长
 
-Press Ctrl+P and select: ExMemo Assistant: Generate Metadata.
+**2. 最大内容长度**
 
-Generating tags and descriptions can often be a daunting task. We frequently end up creating tags with the same meaning but different formulations, impacting subsequent processing. To solve this problem, we have implemented an automatic tag generation feature that can automatically create three tags each time. Users can define the range of tags in the settings or extract options from tags that appear more than twice in the current repository. For generating short descriptions of documents, the tool provides default prompt words, which users can edit in the settings to define their own style.
+设置发送给 LLM 的内容的最大 token 数量限制。
 
-During the process of generating tags and descriptions, the document content must be provided to LLM. For lengthy documents, this might lead to higher costs. Therefore, the tool offers a truncation feature in the settings, allowing only the head, tail, or mid-title of a document to be sent to the model. For documents containing tags and descriptions, users can opt not to regenerate this information in the settings to effectively control costs.
+- 默认值：1000 tokens
+- 如果内容 token 数 ≤ 限制值 → 完整发送
+- 如果内容 token 数 > 限制值 → 按照选择的截断方式处理
 
-Additionally, generating titles, creation dates, and editing dates, although common, can be tedious tasks. Our tool offers one-click generation for these metadata elements, greatly simplifying daily workflows.
+**Token 计数方式**：
+- 中文字符：每个字算 1 token
+- 英文字母/数字：连续的算 1 token（如 "hello" 算 1 token）
+- 标点符号：每个算 1 token
+- 换行符：每个算 1 token
+
+**三种截断方式**：
+
+1. **仅提取开头部分（head_only）**
+   - 保留：内容的前 N 个 token
+   - 处理：直接截断 + "..."
+
+2. **提取开头和结尾部分（head_tail）**
+   - 保留：前 80% + 后 20%
+   - 处理：中间用 "...\n" 连接
+
+3. **提取标题及其下方的文字（heading）**
+   - 优先保留：所有 Markdown 标题
+   - 每个标题后：保留标题下方第一段的前 30 个 token
+   - 如果还没到限制：再补充文章开头的部分内容
+
+**使用建议**：
+- 短文（<1000字）：可以关闭截断，或设大一点的限制
+- 长文（>3000字）：建议开启截断，用 head_only 或 head_tail
+- 结构化文章（有很多标题）：用 heading 方式效果最好
+- 文章开头有重要信息：用 head_only 或 head_tail
+- 需要保留文章结构：用 heading 方式
+
+### 生成元信息
+
+通过按下 Ctrl+P，选择：ExMemo Assistant: 生成元数据。
+
+生成标签和描述常常是个令人头疼的任务。我们经常会生成意思相同但写法不同的标签，这会对后续处理造成影响。为了解决这个问题，我们实现了自动生成标签的功能，每次可以自动生成三个标签。用户可以在设置中定义标签的范围，也可以从当前仓库中提取出现过两次以上的标签作为侯选项。对于文档短描述的生成，工具提供了默认的提示词，用户可以在设置中编辑提示词，以便定义自己的风格。
+
+在生成标签和描述的过程中，需要将文档内容提供给 LLM。对于长度较长的文档，这可能会导致较高的费用。因此工具在设置中提供了截断功能，可以仅将文件的头部、首尾或文中标题传给模型。对于包含标签和描述的文档，可以在设置中选择不再重复生成这些信息，从而有效地控制费用。
+
+此外，生成文件的标题、生成日期和编辑日期等操作虽然常用但却繁琐。我们的工具提供一键生成这些元信息，大大简化了日常工作流程。
+
+### LLM 优化特性
+
+为提高 LLM 调用的稳定性和效率，插件实现了以下优化：
+
+1. **多模型 Fallback**：配置多个模型，第一个失败时自动尝试下一个
+2. **重试机制**：网络错误等可重试情况会自动重试（指数退避）
+3. **超时控制**：可配置请求超时时间
+4. **温度和最大输出 Token 可配置**：灵活控制 LLM 输出风格和长度
+5. **系统提示词**：设定模型角色和输出格式要求
+6. **智能 JSON 解析**：多级解析策略提高兼容性
+7. **单次调用完成所有字段**：标签、分类、描述、标题、slug 合并调用，节省 API 费用
+8. **自动剔除 Frontmatter**：避免重复信息干扰
+9. **标签去重过滤**：自动去除重复和空标签
+
+### 近期新增与改进
+
+* 新增 Slug 生成功能：根据文章内容生成英文 SEO slug，格式为“分类-标题”，并写入 slug 字段。
+* 新增 Collections 自动匹配：从候选合集列表中匹配正文内容，写入 collections 字段。
+* 作者字段新增 avatar：支持写入 author.avatar。
+* 封面图逻辑优化：自动从正文中识别图片链接并写入 featuredImage 字段。
+* 设置项优化：新增对应开关与列表配置，功能可按需启用。
 
 ## License
 
-This project is licensed under the GNU Lesser General Public License v3.0. For more details, please refer to the [LICENSE](./LICENSE) file.
+本项目采用 GNU Lesser General Public License v3.0 许可证。有关详细信息，请参见 [LICENSE](./LICENSE) 文件。
+
