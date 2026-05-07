@@ -17,6 +17,8 @@ export interface ExMemoSettings {
     metaAuthorAvatar: string;
     metaCollectionsEnabled: boolean;
     metaCollections: string[];
+    metaCollectionsUseLLM: boolean;
+    metaCollectionsPrompt: string;
     metaExtractCoverEnabled: boolean;
     metaIsTruncate: boolean;
     metaMaxTokens: number;
@@ -59,6 +61,8 @@ export const DEFAULT_SETTINGS: ExMemoSettings = {
 	metaAuthorAvatar: '',
 	metaCollectionsEnabled: false,
 	metaCollections: [],
+	metaCollectionsUseLLM: false,
+	metaCollectionsPrompt: t('defaultCollectionsPrompt'),
 	metaExtractCoverEnabled: true,
 	metaIsTruncate: true,
 	metaMaxTokens: 1000,

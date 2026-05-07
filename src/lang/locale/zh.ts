@@ -107,6 +107,11 @@ export default {
     "enableCollectionsDesc": "启用后会在正文中匹配候选合集并写入 collections",
     "collectionsList": "合集候选列表",
     "collectionsListDesc": "可选合集列表，使用回车分隔",
+    "collectionsUseLLM": "使用 LLM 匹配合集",
+    "collectionsUseLLMDesc": "启用后使用 LLM 智能匹配合集，否则使用简单字符串匹配",
+    "metaCollectionsPrompt": "合集匹配提示词",
+    "metaCollectionsPromptDesc": "用于匹配合集的提示词",
+    "defaultCollectionsPrompt": "请从可用合集中为这篇文章选择最合适的合集，可以多选。",
 
     "extractCover": "提取封面图",
     "extractCoverDesc": "从文章内容中提取第一张图片作为封面图",

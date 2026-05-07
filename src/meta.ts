@@ -158,12 +158,66 @@ async function addCollections(file: TFile, app: App, settings: ExMemoSettings, f
     if (!contentStr) {
         return false;
     }
-    const matched = matchCollections(contentStr, candidates);
+    
+    let matched: string[] = [];
+    
+    if (settings.metaCollectionsUseLLM && settings.metaCollectionsPrompt) {
+        // 使用 LLM 模式
+        matched = await matchCollectionsWithLLM(contentStr, candidates, settings);
+    } else {
+        // 使用字符串匹配模式
+        matched = matchCollections(contentStr, candidates);
+    }
+    
     if (matched.length === 0) {
         return false;
     }
     updateFrontMatter(file, app, fieldName, matched, 'update');
     return true;
+}
+
+/**
+ * 使用 LLM 匹配合集
+ */
+async function matchCollectionsWithLLM(content: string, candidates: string[], settings: ExMemoSettings): Promise<string[]> {
+    const collectionsList = candidates.join(', ');
+    
+    let req = `${settings.metaCollectionsPrompt}
+
+Available collections: ${collectionsList}
+
+Please return ONLY valid JSON format with a "collections" field containing the array of matched collections:
+{
+  "collections": ["collection1", "collection2"]
+}
+
+Article content:
+
+${content}`;
+    
+    const ret = await callLLM(req, settings);
+    if (!ret) {
+        return [];
+    }
+    
+    const ret_json = parseLLMResponse(ret);
+    if (!ret_json || !ret_json.collections) {
+        return [];
+    }
+    
+    let collections: string[] = [];
+    if (Array.isArray(ret_json.collections)) {
+        collections = ret_json.collections;
+    } else if (typeof ret_json.collections === 'string') {
+        collections = ret_json.collections.split(',').map((c: string) => c.trim());
+    }
+    
+    // 过滤掉不在候选列表中的合集
+    collections = collections.filter((c: string) => 
+        candidates.some((candidate: string) => candidate.trim().toLowerCase() === c.trim().toLowerCase())
+    );
+    
+    return collections.map((c: string) => c.trim()).filter((c: string) => c.length > 0);
 }
 
 function slugify(value: string): string {
@@ -294,25 +348,26 @@ async function addMetaByLLM(
         content_str = await getContent(app, null, -1, '');
     }
     
-    const tag_options = settings.tags.join(',') || t('categoryUnknown');
+    const tag_options = settings.tags.join(',') || '';
     let categories_options = settings.categories.join(',');
-    if (categories_options === '') {
-        categories_options = t('categoryUnknown');
-    }
 
-    // 构建提示词
-    let req = 'I need to generate metadata for the following article. ';
+    // 构建提示词 - 完全使用用户提示词，不追加固定内容
+    let req = 'Generate metadata for the following article. ';
     
     const requirements: string[] = [];
     
     if (fields.tags) {
-        requirements.push(`1. Tags: ${settings.metaTagsPrompt}
-   Available tags: ${tag_options}. Prefer selecting from available tags. If none are suitable, choose the most relevant tags based on the article content.`);
+        requirements.push(`1. Tags: ${settings.metaTagsPrompt}`);
+        if (tag_options) {
+            requirements.push(`   Available tags: ${tag_options}`);
+        }
     }
     
     if (fields.category) {
-        requirements.push(`2. Category: ${settings.metaCategoryPrompt}
-   Available categories: ${categories_options}. Must choose ONE from the available categories.`);
+        requirements.push(`2. Category: ${settings.metaCategoryPrompt}`);
+        if (categories_options) {
+            requirements.push(`   Available categories: ${categories_options}`);
+        }
     }
     
     if (fields.description) {

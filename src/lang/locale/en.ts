@@ -107,6 +107,11 @@ export default {
   "enableCollectionsDesc": "When enabled, match candidates in content and write collections",
   "collectionsList": "Collections list",
   "collectionsListDesc": "Optional collections list, separated by line breaks",
+  "collectionsUseLLM": "Use LLM for collections",
+  "collectionsUseLLMDesc": "When enabled, use LLM to intelligently match collections, otherwise use simple string matching",
+  "metaCollectionsPrompt": "Collections Prompt",
+  "metaCollectionsPromptDesc": "Prompt for generating collections",
+  "defaultCollectionsPrompt": "Please select the most appropriate collections for this article from available collections, multiple selections allowed.",
 
   "extractCover": "Extract cover",
   "extractCoverDesc": "Extract the first image from article content as cover image",
