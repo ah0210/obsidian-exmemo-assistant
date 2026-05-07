@@ -596,6 +596,41 @@ export class ExMemoSettingTab extends PluginSettingTab {
 		collectionsListSetting.setDisabled(!this.plugin.settings.metaCollectionsEnabled);
 		collectionsPromptSetting.setDisabled(!this.plugin.settings.metaCollectionsEnabled);
 
+		// 文章内容优化设置
+		new Setting(containerEl).setName(t("contentOptimize"))
+			.setDesc(t("contentOptimizeDesc"))
+			.setHeading().setClass('setting-item-nested');
+
+		const contentOptimizePromptSetting = new Setting(containerEl)
+			.setName(t('contentOptimizePrompt'))
+			.setDesc(t('contentOptimizePromptDesc'))
+			.setClass('setting-item-nested')
+			.addTextArea((text) => {
+				text.setPlaceholder(this.plugin.settings.contentOptimizePrompt)
+					.setValue(this.plugin.settings.contentOptimizePrompt)
+					.onChange(async (value) => {
+						this.plugin.settings.contentOptimizePrompt = value;
+						await this.plugin.saveSettings();
+					});
+				text.inputEl.setAttr('rows', '3');
+				text.inputEl.addClass('setting-textarea');
+			});
+
+		new Setting(containerEl)
+			.setName(t("enableContentOptimize"))
+			.setDesc(t("enableContentOptimizeDesc"))
+			.setClass('setting-item-nested')
+			.addToggle((toggle) => {
+				toggle.setValue(this.plugin.settings.contentOptimizeEnabled)
+					.onChange(async (value) => {
+						this.plugin.settings.contentOptimizeEnabled = value;
+						await this.plugin.saveSettings();
+						contentOptimizePromptSetting.setDisabled(!value);
+					});
+			});
+
+		contentOptimizePromptSetting.setDisabled(!this.plugin.settings.contentOptimizeEnabled);
+
 		// 提取封面图设置
 		new Setting(containerEl).setName(t("extractCover"))
 			.setDesc(t("extractCoverDesc"))

@@ -124,6 +124,14 @@ export async function adjustMdMeta(app: App, settings: ExMemoSettings, saveSetti
     if (hasChanges) {
         new Notice(t('metaUpdated'));
     }
+
+    // 文章内容优化（在元数据之后执行）
+    if (settings.contentOptimizeEnabled) {
+        const contentOptimized = await optimizeContent(file, app, settings);
+        if (contentOptimized) {
+            new Notice(t('contentOptimized'));
+        }
+    }
     
     // 保存设置（累计token统计）
     if (saveSettingsFn) {
@@ -132,6 +140,55 @@ export async function adjustMdMeta(app: App, settings: ExMemoSettings, saveSetti
     
     // 显示token消耗
     showTokenStats(settings);
+}
+
+async function optimizeContent(file: TFile, app: App, settings: ExMemoSettings): Promise<boolean> {
+    try {
+        // 读取完整文章内容（不截断）
+        const fullContent = await app.vault.read(file);
+        
+        // 分离 frontmatter 和正文
+        let frontmatter = '';
+        let content = fullContent;
+        
+        if (fullContent.startsWith('---')) {
+            const endIdx = fullContent.indexOf('---', 3);
+            if (endIdx !== -1) {
+                frontmatter = fullContent.substring(0, endIdx + 3);
+                content = fullContent.substring(endIdx + 3);
+            }
+        }
+        
+        // 如果没有正文内容，直接返回
+        if (!content || content.trim() === '') {
+            return false;
+        }
+        
+        // 构建提示词
+        const prompt = `${settings.contentOptimizePrompt}
+
+文章内容：
+${content}`;
+        
+        // 调用 LLM 优化内容（不需要 JSON 格式）
+        const optimizedContent = await callLLM(prompt, settings, false);
+        
+        if (!optimizedContent || optimizedContent.trim() === '') {
+            return false;
+        }
+        
+        // 合并 frontmatter 和优化后的内容
+        const newContent = frontmatter ? `${frontmatter}\n${optimizedContent}` : optimizedContent;
+        
+        // 写回文件
+        await app.vault.modify(file, newContent);
+        
+        return true;
+    } catch (error) {
+        console.error('优化文章内容时出错:', error);
+        new Notice(t('llmError') + ': ' + error);
+        return false;
+    }
 }
 
 async function addCollections(file: TFile, app: App, settings: ExMemoSettings, frontMatter: any, force: boolean): Promise<boolean> {
@@ -169,18 +226,22 @@ async function addCollections(file: TFile, app: App, settings: ExMemoSettings, f
  */
 async function matchCollectionsWithLLM(content: string, candidates: string[], settings: ExMemoSettings): Promise<string[]> {
     const collectionsList = candidates.join('\n');
+    const isSingleCandidate = candidates.length === 1;
     
     let req = `${settings.metaCollectionsPrompt}
 
 Available collections (choose ONLY from this list, do NOT create new collections):
 ${collectionsList}
 
+${isSingleCandidate ? '⚠️ CRITICAL: There is ONLY ONE collection available. You MUST be EXTREMELY CAUTIOUS - ONLY select it if the article is PERFECTLY and CLEARLY a match for this collection\'s theme. If in doubt, return an empty array! - This is not a default selection, it must earn its place.' : ''}
+
 IMPORTANT RULES:
 1. You MUST ONLY choose from the available collections listed above
 2. If NO collection matches the article content, return an empty array []
 3. Do NOT create or invent any new collections
-4. Be strict - only select a collection if the article clearly matches its theme
+4. Be EXTREMELY strict - only select a collection if the article CLEARLY and UNAMBIGUOUSLY matches its theme
 5. Return ONLY valid JSON format with a "collections" field
+6. DO NOT select a collection just because it's the only option available - it must be a genuine match
 
 Example responses:
 - If matches: {"collections": ["Collection Name"]}

@@ -43,6 +43,8 @@ export interface ExMemoSettings {
 	metaCategoryEnabled: boolean;
 	totalInputTokens: number;
 	totalOutputTokens: number;
+	contentOptimizeEnabled: boolean;
+	contentOptimizePrompt: string;
 }
 
 export const DEFAULT_SETTINGS: ExMemoSettings = {
@@ -88,4 +90,6 @@ export const DEFAULT_SETTINGS: ExMemoSettings = {
 	metaCategoryEnabled: true,
 	totalInputTokens: 0,
 	totalOutputTokens: 0,
+	contentOptimizeEnabled: false,
+	contentOptimizePrompt: t('defaultContentOptimizePrompt'),
 }

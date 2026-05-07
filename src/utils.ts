@@ -61,7 +61,7 @@ function isRetryableError(error: unknown): boolean {
     return false;
 }
 
-export async function callLLM(req: string, settings: ExMemoSettings): Promise<string> {
+export async function callLLM(req: string, settings: ExMemoSettings, requireJson: boolean = true): Promise<string> {
     let ret = '';
     let info = new Notice(t("llmLoading"), 0);
     
@@ -75,8 +75,10 @@ export async function callLLM(req: string, settings: ExMemoSettings): Promise<st
     
     let lastError: unknown = null;
     
-    // 估算输入token
-    const systemPrompt = "You are a helpful assistant that generates metadata for articles. Always respond with valid JSON format only, without any markdown code blocks or additional text.";
+    // 根据需要选择系统提示词
+    const systemPrompt = requireJson 
+        ? "You are a helpful assistant that generates metadata for articles. Always respond with valid JSON format only, without any markdown code blocks or additional text."
+        : "You are a helpful assistant that optimizes article content. Always respond with the optimized content only, without any additional explanations or markdown formatting.";
     const estimatedInputTokens = estimateTokens(systemPrompt + req);
 
     // 遍历所有模型进行尝试
