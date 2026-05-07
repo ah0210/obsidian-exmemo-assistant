@@ -163,6 +163,9 @@ export default {
     "slugDesc": "自动生成英文 SEO slug（分类-标题）",
     "enableSlug": "启用 slug",
     "enableSlugDesc": "启用后会根据内容生成 slug 并写入字段",
+    "slugPrompt": "Slug 提示词",
+    "slugPromptDesc": "用于生成 slug 的提示词",
+    "defaultSlugPrompt": "生成一个 SEO 友好的英文 slug。要求：只使用小写英文字母和连字符(-)，长度 3-6 个关键词段，不要使用 with/and/for/the/guide/tutorial 等填充词，最重要的关键词放前面，保持简洁有力。",
 
     // 命令相关
     "exmemoAdjustMeta": "生成元数据",

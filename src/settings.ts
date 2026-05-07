@@ -27,6 +27,7 @@ export interface ExMemoSettings {
 	metaTitleEnabled: boolean;
 	metaTitlePrompt: string;
 	metaSlugEnabled: boolean;
+	metaSlugPrompt: string;
 	metaEditTimeEnabled: boolean;
 	metaEditTimeFormat: string;
 	selectExcludedFolders: string[];
@@ -74,6 +75,7 @@ export const DEFAULT_SETTINGS: ExMemoSettings = {
 	metaTitleEnabled: true,
 	metaTitlePrompt: t('defaultTitlePrompt'),
 	metaSlugEnabled: false,
+	metaSlugPrompt: t('defaultSlugPrompt'),
 	metaEditTimeEnabled: true,
 	metaEditTimeFormat: 'YYYY-MM-DD HH:mm:ss',
 	selectExcludedFolders: [],

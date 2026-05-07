@@ -35,3 +35,41 @@
     display: block;
     width: 100%;
 }
+
+.exmemo-collapsible {
+    margin: 8px 0;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.exmemo-collapsible-header {
+    padding: 10px 14px;
+    cursor: pointer;
+    background: var(--background-secondary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    user-select: none;
+    transition: background 0.15s;
+}
+
+.exmemo-collapsible-header:hover {
+    background: var(--background-modifier-hover);
+}
+
+.exmemo-collapsible-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-normal);
+}
+
+.exmemo-collapsible-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-left: auto;
+}
+
+.exmemo-collapsible-content {
+    padding: 8px 0;
+}

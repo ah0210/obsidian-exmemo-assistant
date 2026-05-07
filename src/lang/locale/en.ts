@@ -163,6 +163,9 @@ export default {
   "slugDesc": "Generate an English SEO slug (category-title)",
   "enableSlug": "Enable slug",
   "enableSlugDesc": "When enabled, generate slug based on content",
+  "slugPrompt": "Slug Prompt",
+  "slugPromptDesc": "Prompt for generating slug",
+  "defaultSlugPrompt": "Generate an SEO-friendly English slug. Requirements: Use only lowercase English letters and hyphens (-), length 3-6 keyword segments, do not use filler words like with/and/for/the/guide/tutorial, put the most important keywords first, keep it concise and strong.",
 
   // Commands
     "exmemoAdjustMeta": "Generate meta data",

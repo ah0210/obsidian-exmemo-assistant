@@ -2,6 +2,19 @@ import { PluginSettingTab, Setting, App, TextAreaComponent } from 'obsidian';
 import { loadTags } from "./utils";
 import { t } from "./lang/helpers";
 
+function createSection(containerEl: HTMLElement, title: string, desc?: string, defaultOpen: boolean = false): HTMLElement {
+	const details = containerEl.createEl('details', { cls: 'exmemo-collapsible' });
+	if (defaultOpen) details.setAttr('open', '');
+	
+	const summary = details.createEl('summary', { cls: 'exmemo-collapsible-header' });
+	summary.createEl('span', { text: title, cls: 'exmemo-collapsible-title' });
+	if (desc) {
+		summary.createEl('span', { text: desc, cls: 'exmemo-collapsible-desc' });
+	}
+	
+	return details.createEl('div', { cls: 'exmemo-collapsible-content' });
+}
+
 export class ExMemoSettingTab extends PluginSettingTab {
 	plugin;
 
@@ -15,10 +28,8 @@ export class ExMemoSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		// LLM 设置部分
-		new Setting(containerEl).setName(t("llmSettings"))
-			.setHeading();
-		new Setting(containerEl)
+		const llmSection = createSection(containerEl, t("llmSettings"), '', true);
+		new Setting(llmSection)
 			.setName(t("apiKey"))
 			.addText(text => text
 				.setPlaceholder('Enter your token')
@@ -27,7 +38,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					this.plugin.settings.llmToken = value;
 					await this.plugin.saveSettings();
 				}));
-		new Setting(containerEl)
+		new Setting(llmSection)
 			.setName(t("baseUrl"))
 			.addText(text => text
 				.setPlaceholder('https://api.openai.com/v1')
@@ -36,7 +47,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					this.plugin.settings.llmBaseUrl = value;
 					await this.plugin.saveSettings();
 				}));
-		new Setting(containerEl)
+		new Setting(llmSection)
 			.setName(t("modelName"))
 			.setDesc(t("modelNameDesc"))
 			.addButton((button) => {
@@ -49,7 +60,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 			});
 
 		this.plugin.settings.llmModelNames.forEach((modelName: string, index: number) => {
-			const setting = new Setting(containerEl)
+			const setting = new Setting(llmSection)
 				.setName(index === 0 ? t("defaultModel") : t("candidateModel"))
 				.setClass('setting-item-nested');
 
@@ -97,8 +108,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 				});
 		});
 
-		// LLM 高级设置
-		new Setting(containerEl)
+		new Setting(llmSection)
 			.setName(t("llmMaxRetries"))
 			.setDesc(t("llmMaxRetriesDesc"))
 			.setClass('setting-item-nested')
@@ -110,7 +120,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					});
 			});
 
-		new Setting(containerEl)
+		new Setting(llmSection)
 			.setName(t("llmTimeout"))
 			.setDesc(t("llmTimeoutDesc"))
 			.setClass('setting-item-nested')
@@ -122,7 +132,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					});
 			});
 
-		new Setting(containerEl)
+		new Setting(llmSection)
 			.setName(t("llmTemperature"))
 			.setDesc(t("llmTemperatureDesc"))
 			.setClass('setting-item-nested')
@@ -134,7 +144,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					});
 			});
 
-		new Setting(containerEl)
+		new Setting(llmSection)
 			.setName(t("llmMaxTokens"))
 			.setDesc(t("llmMaxTokensDesc"))
 			.setClass('setting-item-nested')
@@ -146,10 +156,8 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					});
 			});
 
-		// 更新元数据设置部分
-		new Setting(containerEl).setName(t("metaUpdateSetting"))
-			.setHeading();
-		new Setting(containerEl)
+		const metaSection = createSection(containerEl, t("metaUpdateSetting"));
+		new Setting(metaSection)
 			.setName(t("updateMetaOptions"))
 			.setDesc(t("updateMetaOptionsDesc"))
 			.setClass('setting-item-nested')
@@ -164,7 +172,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					});
 			});
 
-		const toggleCutSetting = new Setting(containerEl)
+		const toggleCutSetting = new Setting(metaSection)
 			.setName(t("truncateContent"))
 			.setDesc(t("truncateContentDesc"))
 			.setClass('setting-item-nested')
@@ -178,7 +186,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					});
 			});
 
-		const maxTokensSetting = new Setting(containerEl)
+		const maxTokensSetting = new Setting(metaSection)
 			.setName(t("maxContentLength"))
 			.setDesc(t("maxContentLengthDesc"))
 			.setClass('setting-item-nested-2')
@@ -190,7 +198,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					});
 			});
 
-		const truncateSetting = new Setting(containerEl)
+		const truncateSetting = new Setting(metaSection)
 			.setName(t("truncateMethod"))
 			.setDesc(t("truncateMethodDesc"))
 			.setClass('setting-item-nested-2')
@@ -211,13 +219,9 @@ export class ExMemoSettingTab extends PluginSettingTab {
 			maxTokensSetting.setDisabled(!this.plugin.settings.metaIsTruncate);
 		}
 
-		// 标签设置部分
-		new Setting(containerEl).setName(t("taggingOptions"))
-			.setDesc(t("taggingOptionsDesc"))
-			.setHeading().setClass('setting-item-nested');
+		const tagsSection = createSection(containerEl, t("taggingOptions"), t("taggingOptionsDesc"));
 		
-		// 添加标签字段名设置
-		new Setting(containerEl)
+		new Setting(tagsSection)
 			.setName(t('tagsFieldName'))
 			.setDesc(t('tagsFieldNameDesc'))
 			.setClass('setting-item-nested')
@@ -228,7 +232,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		new Setting(containerEl)
+		new Setting(tagsSection)
 			.setName(t("extractTags"))
 			.setDesc(t("extractTagsDesc"))
 			.setClass('setting-item-nested')
@@ -238,7 +242,6 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					.onClick(async () => {
 						const tags: Record<string, number> = await loadTags(this.app);
 						const sortedTags = Object.entries(tags).sort((a, b) => b[1] - a[1]);
-						//const topTags = sortedTags.slice(0, 30).map(tag => tag[0]);
 						const topTags = sortedTags.filter(([_, count]) => count > 2).map(([tag]) => tag);
 						let currentTagList = this.plugin.settings.tags;
 						for (const tag of topTags) {
@@ -250,7 +253,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 						textComponent.setValue(this.plugin.settings.tags.join('\n'));
 					});
 			});
-		new Setting(containerEl)
+		new Setting(tagsSection)
 			.setName(t("tagList"))
 			.setDesc(t("tagListDesc"))
 			.setClass('setting-item-nested')
@@ -265,8 +268,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 				text.inputEl.addClass('setting-textarea');
 			});
 
-		// 添加标签提示词设置
-		new Setting(containerEl)
+		new Setting(tagsSection)
 			.setName(t('metaTagsPrompt'))
 			.setDesc(t('metaTagsPromptDesc'))
 			.setClass('setting-item-nested')
@@ -281,12 +283,9 @@ export class ExMemoSettingTab extends PluginSettingTab {
 				text.inputEl.addClass('setting-textarea');
 			});
 
-		// 类别设置部分
-		new Setting(containerEl).setName(t("categoryOptions"))
-			.setDesc(t("categoryOptionsDesc"))
-			.setHeading().setClass('setting-item-nested');
+		const categorySection = createSection(containerEl, t("categoryOptions"), t("categoryOptionsDesc"));
 		
-		new Setting(containerEl)
+		new Setting(categorySection)
 			.setName(t('enableCategory'))
 			.setDesc(t('enableCategoryDesc'))
 			.setClass('setting-item-nested')
@@ -297,8 +296,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 			
-		// 添加类别字段名设置
-		new Setting(containerEl)
+		new Setting(categorySection)
 			.setName(t('categoryFieldName'))
 			.setDesc(t('categoryFieldNameDesc'))
 			.setClass('setting-item-nested')
@@ -309,7 +307,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		new Setting(containerEl)
+		new Setting(categorySection)
 			.setName(t("categoryList"))
 			.setDesc(t("categoryListDesc"))
 			.setClass('setting-item-nested')
@@ -323,8 +321,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 				text.inputEl.addClass('setting-textarea');
 			});
 
-		// 添加类别提示词设置
-		new Setting(containerEl)
+		new Setting(categorySection)
 			.setName(t('metaCategoryPrompt'))
 			.setDesc(t('metaCategoryPromptDesc'))
 			.setClass('setting-item-nested')
@@ -339,13 +336,9 @@ export class ExMemoSettingTab extends PluginSettingTab {
 				text.inputEl.addClass('setting-textarea');
 			});
 
-		// 描述设置部分
-		new Setting(containerEl).setName(t("description"))
-			.setDesc(t("descriptionDesc"))
-			.setHeading().setClass('setting-item-nested');
+		const descSection = createSection(containerEl, t("description"), t("descriptionDesc"));
 		
-		// 添加描述字段名设置
-		new Setting(containerEl)
+		new Setting(descSection)
 			.setName(t('descriptionFieldName'))
 			.setDesc(t('descriptionFieldNameDesc'))
 			.setClass('setting-item-nested')
@@ -356,7 +349,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		new Setting(containerEl)
+		new Setting(descSection)
 			.setName(t("descriptionPrompt"))
 			.setDesc(t("descriptionPromptDesc"))
 			.setClass('setting-item-nested')
@@ -370,13 +363,9 @@ export class ExMemoSettingTab extends PluginSettingTab {
 				text.inputEl.addClass('setting-textarea');
 			});
 
-		// 新增标题设置部分
-		new Setting(containerEl).setName(t("title"))
-			.setDesc(t("titleDesc"))
-			.setHeading().setClass('setting-item-nested');
+		const titleSection = createSection(containerEl, t("title"), t("titleDesc"));
 		
-		// 添加标题字段名设置
-		new Setting(containerEl)
+		new Setting(titleSection)
 			.setName(t('titleFieldName'))
 			.setDesc(t('titleFieldNameDesc'))
 			.setClass('setting-item-nested')
@@ -387,7 +376,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		new Setting(containerEl)
+		new Setting(titleSection)
 			.setName(t("enableTitle"))
 			.setDesc(t("enableTitleDesc"))
 			.setClass('setting-item-nested')
@@ -400,7 +389,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					});
 			});
 
-		const titlePromptSetting = new Setting(containerEl)
+		const titlePromptSetting = new Setting(titleSection)
 			.setName(t("titlePrompt"))
 			.setDesc(t("titlePromptDesc"))
 			.setClass('setting-item-nested')
@@ -416,11 +405,23 @@ export class ExMemoSettingTab extends PluginSettingTab {
 
 		titlePromptSetting.setDisabled(!this.plugin.settings.metaTitleEnabled);
 
-		new Setting(containerEl).setName(t("slug"))
-			.setDesc(t("slugDesc"))
-			.setHeading().setClass('setting-item-nested');
+		const slugSection = createSection(containerEl, t("slug"), t("slugDesc"));
 
-		new Setting(containerEl)
+		const slugPromptSetting = new Setting(slugSection)
+			.setName(t("slugPrompt"))
+			.setDesc(t("slugPromptDesc"))
+			.setClass('setting-item-nested')
+			.addTextArea((text) => {
+				text.setValue(this.plugin.settings.metaSlugPrompt)
+					.onChange(async (value) => {
+						this.plugin.settings.metaSlugPrompt = value;
+						await this.plugin.saveSettings();
+					});
+				text.inputEl.setAttr('rows', '3');
+				text.inputEl.addClass('setting-textarea');
+			});
+
+		new Setting(slugSection)
 			.setName(t("enableSlug"))
 			.setDesc(t("enableSlugDesc"))
 			.setClass('setting-item-nested')
@@ -429,16 +430,15 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						this.plugin.settings.metaSlugEnabled = value;
 						await this.plugin.saveSettings();
+						slugPromptSetting.setDisabled(!value);
 					});
 			});
 
-		// 新增编辑时间设置部分
-		new Setting(containerEl).setName(t("editTime"))
-			.setDesc(t("editTimeDesc"))
-			.setHeading().setClass('setting-item-nested');
+		slugPromptSetting.setDisabled(!this.plugin.settings.metaSlugEnabled);
+
+		const editTimeSection = createSection(containerEl, t("editTime"), t("editTimeDesc"));
 		
-		// 添加更新时间字段名设置
-		new Setting(containerEl)
+		new Setting(editTimeSection)
 			.setName(t('updateTimeFieldName'))
 			.setDesc(t('updateTimeFieldNameDesc'))
 			.setClass('setting-item-nested')
@@ -449,8 +449,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		// 添加创建时间字段名设置
-		new Setting(containerEl)
+		new Setting(editTimeSection)
 			.setName(t('createTimeFieldName'))
 			.setDesc(t('createTimeFieldNameDesc'))
 			.setClass('setting-item-nested')
@@ -461,7 +460,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		new Setting(containerEl)
+		new Setting(editTimeSection)
 			.setName(t("enableEditTime"))
 			.setDesc(t("enableEditTimeDesc"))
 			.setClass('setting-item-nested')
@@ -474,7 +473,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					});
 			});
 
-		const editTimeFormatSetting = new Setting(containerEl)
+		const editTimeFormatSetting = new Setting(editTimeSection)
 			.setName(t("editTimeFormat"))
 			.setDesc(t("editTimeFormatDesc"))
 			.setClass('setting-item-nested')
@@ -489,12 +488,9 @@ export class ExMemoSettingTab extends PluginSettingTab {
 
 		editTimeFormatSetting.setDisabled(!this.plugin.settings.metaEditTimeEnabled);
 
-		// 作者设置部分
-		new Setting(containerEl).setName(t("author"))
-			.setDesc(t("authorDesc"))
-			.setHeading().setClass('setting-item-nested');
+		const authorSection = createSection(containerEl, t("author"), t("authorDesc"));
 		
-		const authorNameSetting = new Setting(containerEl)
+		const authorNameSetting = new Setting(authorSection)
 			.setName(t('authorName'))
 			.setDesc(t('authorNameDesc'))
 			.setClass('setting-item-nested')
@@ -505,7 +501,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		const authorLinkSetting = new Setting(containerEl)
+		const authorLinkSetting = new Setting(authorSection)
 			.setName(t('authorLink'))
 			.setDesc(t('authorLinkDesc'))
 			.setClass('setting-item-nested')
@@ -516,7 +512,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		const authorAvatarSetting = new Setting(containerEl)
+		const authorAvatarSetting = new Setting(authorSection)
 			.setName(t('authorAvatar'))
 			.setDesc(t('authorAvatarDesc'))
 			.setClass('setting-item-nested')
@@ -527,7 +523,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		new Setting(containerEl)
+		new Setting(authorSection)
 			.setName(t("enableAuthor"))
 			.setDesc(t("enableAuthorDesc"))
 			.setClass('setting-item-nested')
@@ -546,11 +542,9 @@ export class ExMemoSettingTab extends PluginSettingTab {
 		authorLinkSetting.setDisabled(!this.plugin.settings.metaAuthorEnabled);
 		authorAvatarSetting.setDisabled(!this.plugin.settings.metaAuthorEnabled);
 
-		new Setting(containerEl).setName(t("collections"))
-			.setDesc(t("collectionsDesc"))
-			.setHeading().setClass('setting-item-nested');
+		const collectionsSection = createSection(containerEl, t("collections"), t("collectionsDesc"));
 
-		const collectionsListSetting = new Setting(containerEl)
+		const collectionsListSetting = new Setting(collectionsSection)
 			.setName(t('collectionsList'))
 			.setDesc(t('collectionsListDesc'))
 			.setClass('setting-item-nested')
@@ -564,7 +558,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 				text.inputEl.addClass('setting-textarea');
 			});
 
-		new Setting(containerEl)
+		new Setting(collectionsSection)
 			.setName(t("enableCollections"))
 			.setDesc(t("enableCollectionsDesc"))
 			.setClass('setting-item-nested')
@@ -578,7 +572,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					});
 			});
 
-		const collectionsPromptSetting = new Setting(containerEl)
+		const collectionsPromptSetting = new Setting(collectionsSection)
 			.setName(t('metaCollectionsPrompt'))
 			.setDesc(t('metaCollectionsPromptDesc'))
 			.setClass('setting-item-nested')
@@ -596,12 +590,9 @@ export class ExMemoSettingTab extends PluginSettingTab {
 		collectionsListSetting.setDisabled(!this.plugin.settings.metaCollectionsEnabled);
 		collectionsPromptSetting.setDisabled(!this.plugin.settings.metaCollectionsEnabled);
 
-		// 文章内容优化设置
-		new Setting(containerEl).setName(t("contentOptimize"))
-			.setDesc(t("contentOptimizeDesc"))
-			.setHeading().setClass('setting-item-nested');
+		const contentOptimizeSection = createSection(containerEl, t("contentOptimize"), t("contentOptimizeDesc"));
 
-		const contentOptimizePromptSetting = new Setting(containerEl)
+		const contentOptimizePromptSetting = new Setting(contentOptimizeSection)
 			.setName(t('contentOptimizePrompt'))
 			.setDesc(t('contentOptimizePromptDesc'))
 			.setClass('setting-item-nested')
@@ -616,7 +607,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 				text.inputEl.addClass('setting-textarea');
 			});
 
-		new Setting(containerEl)
+		new Setting(contentOptimizeSection)
 			.setName(t("enableContentOptimize"))
 			.setDesc(t("enableContentOptimizeDesc"))
 			.setClass('setting-item-nested')
@@ -631,12 +622,9 @@ export class ExMemoSettingTab extends PluginSettingTab {
 
 		contentOptimizePromptSetting.setDisabled(!this.plugin.settings.contentOptimizeEnabled);
 
-		// 提取封面图设置
-		new Setting(containerEl).setName(t("extractCover"))
-			.setDesc(t("extractCoverDesc"))
-			.setHeading().setClass('setting-item-nested');
+		const extractCoverSection = createSection(containerEl, t("extractCover"), t("extractCoverDesc"));
 
-		new Setting(containerEl)
+		new Setting(extractCoverSection)
 			.setName(t("enableExtractCover"))
 			.setDesc(t("enableExtractCoverDesc"))
 			.setClass('setting-item-nested')
@@ -648,11 +636,9 @@ export class ExMemoSettingTab extends PluginSettingTab {
 					});
 			});
 
-		// 添加自定义元数据设置
-		new Setting(containerEl)
-			.setName(t('customMetadata'))
-			.setDesc(t('customMetadataDesc'))
-			.setHeading().setClass('setting-item-nested')
+		const customMetaSection = createSection(containerEl, t('customMetadata'), t('customMetadataDesc'));
+
+		new Setting(customMetaSection)
 			.addButton(button => button
 				.setButtonText(t('addField'))
 				.onClick(async () => {
@@ -670,7 +656,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 		}
 		
 		this.plugin.settings.customMetadata.forEach((meta: CustomMetadata, index: number) => {
-			const setting = new Setting(containerEl)
+			const setting = new Setting(customMetaSection)
 				.addText(text => text
 					.setPlaceholder(t('fieldKey'))
 					.setValue(meta.key)

@@ -3,50 +3,44 @@ import OpenAI from "openai";
 import { ExMemoSettings } from "./settings";
 import { t } from "./lang/helpers"
 
-// 本次token统计
+const TOKEN_REGEX = /[\u4e00-\u9fa5]|[a-zA-Z0-9]+|[\.,!?;，。！？；#]|[\n]/g;
+
 let currentInputTokens: number = 0;
 let currentOutputTokens: number = 0;
 
-// 获取当前token统计
-export function getTokenStats(): { currentInput: number; currentOutput: number; totalInput: number; totalOutput: number; total: number } {
+export function getTokenStats(settings?: ExMemoSettings): { currentInput: number; currentOutput: number; totalInput: number; totalOutput: number; total: number } {
     return {
         currentInput: currentInputTokens,
         currentOutput: currentOutputTokens,
-        totalInput: 0,
-        totalOutput: 0,
-        total: currentInputTokens + currentOutputTokens
+        totalInput: settings?.totalInputTokens ?? 0,
+        totalOutput: settings?.totalOutputTokens ?? 0,
+        total: (currentInputTokens + currentOutputTokens) + ((settings?.totalInputTokens ?? 0) + (settings?.totalOutputTokens ?? 0))
     };
 }
 
-// 显示token消耗
 export function showTokenStats(settings: ExMemoSettings): void {
     new Notice(`输入: ${currentInputTokens} token\n输出: ${currentOutputTokens} token\n累计: ${settings.totalInputTokens + settings.totalOutputTokens} token`, 5000);
 }
 
-// 重置本次token统计
 export function resetCurrentTokenStats(): void {
     currentInputTokens = 0;
     currentOutputTokens = 0;
 }
 
-// 重置累计token统计
 export function resetTotalTokenStats(settings: ExMemoSettings): void {
     settings.totalInputTokens = 0;
     settings.totalOutputTokens = 0;
 }
 
-// 估算token数量（简单估算）
 function estimateTokens(text: string): number {
-    const tokens = text.match(/[\u4e00-\u9fa5]|[a-zA-Z0-9]+|[\.,!?;，。！？；#]|[\n]/g) || [];
+    const tokens = text.match(TOKEN_REGEX) || [];
     return tokens.length;
 }
 
-// 延时函数
 function delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// 判断是否为可重试的错误
 function isRetryableError(error: unknown): boolean {
     if (error instanceof Error) {
         const message = error.message.toLowerCase();
@@ -59,6 +53,35 @@ function isRetryableError(error: unknown): boolean {
                message.includes('504');
     }
     return false;
+}
+
+export function parseLLMResponse(response: string): any {
+    if (!response) return null;
+    
+    try {
+        return JSON.parse(response.trim());
+    } catch {
+    }
+
+    let jsonMatch = response.match(/{[\s\S]*}/);
+    if (jsonMatch) {
+        try {
+            return JSON.parse(jsonMatch[0]);
+        } catch {
+        }
+    }
+
+    const cleaned = response.replace(/```(?:json)?\s*/g, '').trim();
+    jsonMatch = cleaned.match(/{[\s\S]*}/);
+    if (jsonMatch) {
+        try {
+            return JSON.parse(jsonMatch[0]);
+        } catch (error) {
+            console.warn("JSON 解析失败:", error);
+        }
+    }
+
+    return null;
 }
 
 export async function callLLM(req: string, settings: ExMemoSettings, requireJson: boolean = true): Promise<string> {
@@ -75,26 +98,23 @@ export async function callLLM(req: string, settings: ExMemoSettings, requireJson
     
     let lastError: unknown = null;
     
-    // 根据需要选择系统提示词
     const systemPrompt = requireJson 
         ? "You are a helpful assistant that generates metadata for articles. Always respond with valid JSON format only, without any markdown code blocks or additional text."
         : "You are a helpful assistant that optimizes article content. Always respond with the optimized content only, without any additional explanations or markdown formatting.";
     const estimatedInputTokens = estimateTokens(systemPrompt + req);
 
-    // 遍历所有模型进行尝试
+    const openai = new OpenAI({
+        apiKey: settings.llmToken,
+        baseURL: settings.llmBaseUrl,
+        dangerouslyAllowBrowser: true,
+        timeout: timeout
+    });
+
     for (let modelIndex = 0; modelIndex < models.length; modelIndex++) {
         const model = models[modelIndex].trim();
         
-        // 对每个模型进行重试
         for (let attempt = 0; attempt < maxRetries; attempt++) {
             try {
-                const openai = new OpenAI({
-                    apiKey: settings.llmToken,
-                    baseURL: settings.llmBaseUrl,
-                    dangerouslyAllowBrowser: true,
-                    timeout: timeout
-                });
-
                 const completion = await openai.chat.completions.create({
                     model,
                     messages: [
@@ -111,15 +131,12 @@ export async function callLLM(req: string, settings: ExMemoSettings, requireJson
                 if (completion.choices.length > 0) {
                     ret = completion.choices[0].message['content'] || ret;
                     
-                    // 统计token
                     const inputTokens = completion.usage?.prompt_tokens || estimatedInputTokens;
                     const outputTokens = completion.usage?.completion_tokens || estimateTokens(ret);
                     
-                    // 更新本次统计
                     currentInputTokens += inputTokens;
                     currentOutputTokens += outputTokens;
                     
-                    // 更新累计统计
                     settings.totalInputTokens += inputTokens;
                     settings.totalOutputTokens += outputTokens;
                     
@@ -130,14 +147,12 @@ export async function callLLM(req: string, settings: ExMemoSettings, requireJson
                 lastError = error;
                 console.warn(`Model ${model} attempt ${attempt + 1} failed:`, error);
 
-                // 如果不是最后一个模型，不进行重试，直接尝试下一个模型
                 if (modelIndex < models.length - 1) {
                     break;
                 }
 
-                // 如果是最后一个模型且不是最后一次尝试，等待后重试
                 if (attempt < maxRetries - 1 && isRetryableError(error)) {
-                    const waitTime = Math.pow(2, attempt) * 1000; // 指数退避
+                    const waitTime = Math.pow(2, attempt) * 1000;
                     new Notice(`${t("llmError")}, retrying in ${waitTime / 1000}s...`, 2000);
                     await delay(waitTime);
                 }
@@ -145,7 +160,6 @@ export async function callLLM(req: string, settings: ExMemoSettings, requireJson
         }
     }
 
-    // 所有尝试都失败了
     info.hide();
     if (lastError) {
         new Notice(t("llmError") + "\n" + String(lastError));
@@ -192,8 +206,7 @@ export async function confirmDialog(app: App, message: string): Promise<boolean>
 }
 
 function splitIntoTokens(str: string) {
-    const regex = /[\u4e00-\u9fa5]|[a-zA-Z0-9]+|[\.,!?;，。！？；#]|[\n]/g;
-    const tokens = str.match(regex);
+    const tokens = str.match(TOKEN_REGEX);
     return tokens || [];
 }
 
