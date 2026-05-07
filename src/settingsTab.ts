@@ -574,20 +574,6 @@ export class ExMemoSettingTab extends PluginSettingTab {
 						this.plugin.settings.metaCollectionsEnabled = value;
 						await this.plugin.saveSettings();
 						collectionsListSetting.setDisabled(!value);
-						collectionsUseLLMSetting.setDisabled(!value);
-						collectionsPromptSetting.setDisabled(!value || !this.plugin.settings.metaCollectionsUseLLM);
-					});
-			});
-
-		const collectionsUseLLMSetting = new Setting(containerEl)
-			.setName(t('collectionsUseLLM'))
-			.setDesc(t('collectionsUseLLMDesc'))
-			.setClass('setting-item-nested')
-			.addToggle((toggle) => {
-				toggle.setValue(this.plugin.settings.metaCollectionsUseLLM)
-					.onChange(async (value) => {
-						this.plugin.settings.metaCollectionsUseLLM = value;
-						await this.plugin.saveSettings();
 						collectionsPromptSetting.setDisabled(!value);
 					});
 			});
@@ -608,8 +594,7 @@ export class ExMemoSettingTab extends PluginSettingTab {
 			});
 
 		collectionsListSetting.setDisabled(!this.plugin.settings.metaCollectionsEnabled);
-		collectionsUseLLMSetting.setDisabled(!this.plugin.settings.metaCollectionsEnabled);
-		collectionsPromptSetting.setDisabled(!this.plugin.settings.metaCollectionsEnabled || !this.plugin.settings.metaCollectionsUseLLM);
+		collectionsPromptSetting.setDisabled(!this.plugin.settings.metaCollectionsEnabled);
 
 		// 提取封面图设置
 		new Setting(containerEl).setName(t("extractCover"))

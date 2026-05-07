@@ -3,6 +3,44 @@ import OpenAI from "openai";
 import { ExMemoSettings } from "./settings";
 import { t } from "./lang/helpers"
 
+// 本次token统计
+let currentInputTokens: number = 0;
+let currentOutputTokens: number = 0;
+
+// 获取当前token统计
+export function getTokenStats(): { currentInput: number; currentOutput: number; totalInput: number; totalOutput: number; total: number } {
+    return {
+        currentInput: currentInputTokens,
+        currentOutput: currentOutputTokens,
+        totalInput: 0,
+        totalOutput: 0,
+        total: currentInputTokens + currentOutputTokens
+    };
+}
+
+// 显示token消耗
+export function showTokenStats(settings: ExMemoSettings): void {
+    new Notice(`输入: ${currentInputTokens} token\n输出: ${currentOutputTokens} token\n累计: ${settings.totalInputTokens + settings.totalOutputTokens} token`, 5000);
+}
+
+// 重置本次token统计
+export function resetCurrentTokenStats(): void {
+    currentInputTokens = 0;
+    currentOutputTokens = 0;
+}
+
+// 重置累计token统计
+export function resetTotalTokenStats(settings: ExMemoSettings): void {
+    settings.totalInputTokens = 0;
+    settings.totalOutputTokens = 0;
+}
+
+// 估算token数量（简单估算）
+function estimateTokens(text: string): number {
+    const tokens = text.match(/[\u4e00-\u9fa5]|[a-zA-Z0-9]+|[\.,!?;，。！？；#]|[\n]/g) || [];
+    return tokens.length;
+}
+
 // 延时函数
 function delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -36,6 +74,10 @@ export async function callLLM(req: string, settings: ExMemoSettings): Promise<st
     const timeout = settings.llmTimeout || 60000;
     
     let lastError: unknown = null;
+    
+    // 估算输入token
+    const systemPrompt = "You are a helpful assistant that generates metadata for articles. Always respond with valid JSON format only, without any markdown code blocks or additional text.";
+    const estimatedInputTokens = estimateTokens(systemPrompt + req);
 
     // 遍历所有模型进行尝试
     for (let modelIndex = 0; modelIndex < models.length; modelIndex++) {
@@ -56,7 +98,7 @@ export async function callLLM(req: string, settings: ExMemoSettings): Promise<st
                     messages: [
                         {
                             "role": "system",
-                            "content": "You are a helpful assistant that generates metadata for articles. Always respond with valid JSON format only, without any markdown code blocks or additional text."
+                            "content": systemPrompt
                         },
                         { "role": "user", "content": req }
                     ],
@@ -66,6 +108,19 @@ export async function callLLM(req: string, settings: ExMemoSettings): Promise<st
 
                 if (completion.choices.length > 0) {
                     ret = completion.choices[0].message['content'] || ret;
+                    
+                    // 统计token
+                    const inputTokens = completion.usage?.prompt_tokens || estimatedInputTokens;
+                    const outputTokens = completion.usage?.completion_tokens || estimateTokens(ret);
+                    
+                    // 更新本次统计
+                    currentInputTokens += inputTokens;
+                    currentOutputTokens += outputTokens;
+                    
+                    // 更新累计统计
+                    settings.totalInputTokens += inputTokens;
+                    settings.totalOutputTokens += outputTokens;
+                    
                     info.hide();
                     return ret;
                 }

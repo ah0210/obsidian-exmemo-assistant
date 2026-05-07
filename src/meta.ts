@@ -1,11 +1,11 @@
 import { App, Notice, TFile } from 'obsidian';
 import { ExMemoSettings } from "./settings";
-import { getContent } from './utils';
+import { getContent, showTokenStats, resetCurrentTokenStats } from './utils';
 import { callLLM } from "./utils";
 import { t } from './lang/helpers';
 import { updateFrontMatter } from './utils';
 
-export async function adjustMdMeta(app: App, settings: ExMemoSettings) {
+export async function adjustMdMeta(app: App, settings: ExMemoSettings, saveSettingsFn?: () => Promise<void>) {
     const file = app.workspace.getActiveFile();
     if (!file) {
         new Notice(t('pleaseOpenFile'));
@@ -16,6 +16,9 @@ export async function adjustMdMeta(app: App, settings: ExMemoSettings) {
         return;
     }
         
+    // 重置token统计
+    resetCurrentTokenStats();
+    
     // 解析前置元数据
     const fm = app.metadataCache.getFileCache(file);
     let frontMatter = fm?.frontmatter || {};
@@ -121,22 +124,14 @@ export async function adjustMdMeta(app: App, settings: ExMemoSettings) {
     if (hasChanges) {
         new Notice(t('metaUpdated'));
     }
-}
-
-function matchCollections(content: string, candidates: string[]): string[] {
-    const results: string[] = [];
-    const lower = content.toLowerCase();
-    for (const item of candidates) {
-        const trimmed = item.trim();
-        if (!trimmed) {
-            continue;
-        }
-        const needle = trimmed.toLowerCase();
-        if (lower.includes(needle) && !results.includes(trimmed)) {
-            results.push(trimmed);
-        }
+    
+    // 保存设置（累计token统计）
+    if (saveSettingsFn) {
+        await saveSettingsFn();
     }
-    return results;
+    
+    // 显示token消耗
+    showTokenStats(settings);
 }
 
 async function addCollections(file: TFile, app: App, settings: ExMemoSettings, frontMatter: any, force: boolean): Promise<boolean> {
@@ -159,15 +154,8 @@ async function addCollections(file: TFile, app: App, settings: ExMemoSettings, f
         return false;
     }
     
-    let matched: string[] = [];
-    
-    if (settings.metaCollectionsUseLLM && settings.metaCollectionsPrompt) {
-        // 使用 LLM 模式
-        matched = await matchCollectionsWithLLM(contentStr, candidates, settings);
-    } else {
-        // 使用字符串匹配模式
-        matched = matchCollections(contentStr, candidates);
-    }
+    // 使用 LLM 智能匹配合集
+    const matched = await matchCollectionsWithLLM(contentStr, candidates, settings);
     
     if (matched.length === 0) {
         return false;
@@ -177,19 +165,26 @@ async function addCollections(file: TFile, app: App, settings: ExMemoSettings, f
 }
 
 /**
- * 使用 LLM 匹配合集
+ * 使用 LLM 严格匹配合集
  */
 async function matchCollectionsWithLLM(content: string, candidates: string[], settings: ExMemoSettings): Promise<string[]> {
-    const collectionsList = candidates.join(', ');
+    const collectionsList = candidates.join('\n');
     
     let req = `${settings.metaCollectionsPrompt}
 
-Available collections: ${collectionsList}
+Available collections (choose ONLY from this list, do NOT create new collections):
+${collectionsList}
 
-Please return ONLY valid JSON format with a "collections" field containing the array of matched collections:
-{
-  "collections": ["collection1", "collection2"]
-}
+IMPORTANT RULES:
+1. You MUST ONLY choose from the available collections listed above
+2. If NO collection matches the article content, return an empty array []
+3. Do NOT create or invent any new collections
+4. Be strict - only select a collection if the article clearly matches its theme
+5. Return ONLY valid JSON format with a "collections" field
+
+Example responses:
+- If matches: {"collections": ["Collection Name"]}
+- If no matches: {"collections": []}
 
 Article content:
 
@@ -212,12 +207,25 @@ ${content}`;
         collections = ret_json.collections.split(',').map((c: string) => c.trim());
     }
     
-    // 过滤掉不在候选列表中的合集
-    collections = collections.filter((c: string) => 
-        candidates.some((candidate: string) => candidate.trim().toLowerCase() === c.trim().toLowerCase())
-    );
+    // 严格过滤：只保留在候选列表中完全匹配的合集
+    collections = collections.filter((c: string) => {
+        const trimmed = c.trim();
+        return candidates.some((candidate: string) => {
+            const candidateTrimmed = candidate.trim();
+            return candidateTrimmed.toLowerCase() === trimmed.toLowerCase();
+        });
+    }).map((c: string) => c.trim()).filter((c: string) => c.length > 0);
     
-    return collections.map((c: string) => c.trim()).filter((c: string) => c.length > 0);
+    // 映射回原始候选列表中的正确大小写格式
+    collections = collections.map((c: string) => {
+        const matched = candidates.find((candidate: string) => 
+            candidate.trim().toLowerCase() === c.toLowerCase()
+        );
+        return matched ? matched.trim() : c.trim();
+    });
+    
+    // 去重
+    return Array.from(new Set(collections));
 }
 
 function slugify(value: string): string {
