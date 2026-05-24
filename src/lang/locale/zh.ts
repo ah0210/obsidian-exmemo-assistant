@@ -109,7 +109,7 @@ export default {
     "collectionsListDesc": "可选合集列表，使用回车分隔",
     "metaCollectionsPrompt": "合集匹配提示词",
     "metaCollectionsPromptDesc": "用于匹配合集的提示词",
-    "defaultCollectionsPrompt": "请从可用合集中为这篇文章选择最合适的合集。只有当文章内容与合集主题高度相关时才选择。如果没有合适的合集，必须返回空数组。",
+    "defaultCollectionsPrompt": "逐一审查每个候选合集与文章核心主题的直接相关性。只有当文章核心主题与合集名称明确一致时才匹配。关键原则：宁可漏选，不可误选。如果没有明确匹配的合集，必须返回空数组 []。",
     "contentOptimize": "文章内容优化",
     "contentOptimizeDesc": "生成元数据后，是否优化文章内容",
     "enableContentOptimize": "启用文章优化",

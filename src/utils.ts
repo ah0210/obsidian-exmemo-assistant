@@ -99,8 +99,8 @@ export async function callLLM(req: string, settings: ExMemoSettings, requireJson
     let lastError: unknown = null;
     
     const systemPrompt = requireJson 
-        ? "You are a helpful assistant that generates metadata for articles. Always respond with valid JSON format only, without any markdown code blocks or additional text."
-        : "You are a helpful assistant that optimizes article content. Always respond with the optimized content only, without any additional explanations or markdown formatting.";
+        ? "You are a metadata generator. Your primary duty is accuracy. When uncertain or when no option clearly matches, you MUST return an empty string or empty array rather than guessing. Always respond with valid JSON format only, without any markdown code blocks or additional text."
+        : "You are a content editor that optimizes article content. Respond with the optimized content only, without any additional explanations or markdown formatting.";
     const estimatedInputTokens = estimateTokens(systemPrompt + req);
 
     const openai = new OpenAI({

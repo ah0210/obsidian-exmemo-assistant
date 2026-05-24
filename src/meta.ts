@@ -309,11 +309,16 @@ async function addMetaByLLM(
         const collectionNum = requirements.length + 1;
         requirements.push(`${collectionNum}. Collections: ${settings.metaCollectionsPrompt}
 
-   Available collections (choose ONLY from this list):
+   Available collections (you may ONLY choose from this list, do NOT invent any):
    ${collectionsList}
 
-   ${isSingle ? '⚠️ CRITICAL: There is ONLY ONE collection. ONLY select it if the article PERFECTLY matches. If in doubt, return empty array!' : ''}
-   IMPORTANT: Only select collections that CLEARLY match. If none match, return empty array []. Do NOT invent new collections.`);
+   ⚠️ IMPORTANT RULES - READ CAREFULLY:
+   1. For EACH collection above, independently determine: "Does the article's CORE TOPIC directly match this collection's theme?"
+   2. If the article is about cooking, do NOT match it to a "programming" collection just because the author mentions their computer
+   3. "Partially related" or "tangentially mentioned" is NOT a match — only clear, direct thematic alignment counts
+   4. If NONE of the collections are a clear match, you MUST return an EMPTY array: {"collections": []}
+   5. Returning an empty array is the CORRECT and PREFERRED answer when uncertain
+   ${isSingle ? '6. WARNING: There is ONLY ONE collection. Unless the article DIRECTLY and UNAMBIGUOUSLY matches this collection\'s theme, return empty array. Do NOT force a match just because it\'s the only option!' : ''}`);
     }
 
     req += `\nRequirements:\n${requirements.join('\n\n')}`;

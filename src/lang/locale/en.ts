@@ -109,7 +109,7 @@ export default {
   "collectionsListDesc": "Optional collections list, separated by line breaks",
   "metaCollectionsPrompt": "Collections Prompt",
   "metaCollectionsPromptDesc": "Prompt for generating collections",
-  "defaultCollectionsPrompt": "Please select the most appropriate collections for this article from available collections. Only select a collection if the article is highly relevant to the collection's theme. If no collections match, return an empty array.",
+  "defaultCollectionsPrompt": "Examine each candidate collection individually against the article's CORE TOPIC. Match only when the article's main subject directly aligns with the collection name. Key principle: it's better to miss a match than to force a wrong one. If no collection clearly matches, you MUST return an empty array [].",
   "contentOptimize": "Content Optimization",
   "contentOptimizeDesc": "Whether to optimize article content after generating metadata",
   "enableContentOptimize": "Enable Content Optimization",
